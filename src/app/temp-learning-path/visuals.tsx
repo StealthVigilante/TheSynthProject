@@ -12,17 +12,27 @@ interface WaveformCanvasProps {
 export function WaveformCanvas({ getWaveform, width = 320, height = 100 }: WaveformCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
+  const getWaveformRef = useRef(getWaveform);
+
+  useEffect(() => {
+    getWaveformRef.current = getWaveform;
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const dpr = window.devicePixelRatio ?? 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    ctx.scale(dpr, dpr);
 
     const draw = () => {
-      const data = getWaveform();
-      const W = canvas.width;
-      const H = canvas.height;
+      const data = getWaveformRef.current();
+      const W = width;
+      const H = height;
       ctx.clearRect(0, 0, W, H);
 
       ctx.strokeStyle = "oklch(1 0 0 / 6%)";
@@ -48,7 +58,7 @@ export function WaveformCanvas({ getWaveform, width = 320, height = 100 }: Wavef
 
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [getWaveform]);
+  }, [width, height]);
 
   return (
     <canvas
