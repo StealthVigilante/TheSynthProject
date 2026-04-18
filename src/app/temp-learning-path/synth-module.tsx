@@ -49,7 +49,6 @@ export function SynthModule({
           options={WAVEFORM_OPTIONS}
           onChange={(v) => onChange("oscillator.type", v)}
           label="Waveform"
-          disabled={!waveEnabled}
         />
       </div>
 
