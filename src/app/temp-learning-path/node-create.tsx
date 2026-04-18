@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SynthModule } from "./synth-module";
 import type { ParamValues } from "@/lib/synth-engine";
@@ -33,23 +33,31 @@ export function NodeCreate({
   onComplete,
 }: NodeCreateProps) {
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [attempts, setAttempts] = useState(0);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPlayingRef = useRef(false);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   function playTarget() {
+    if (isPlayingRef.current) return;
+    isPlayingRef.current = true;
     const snapshot: Partial<ParamValues> = {};
     for (const key of Object.keys(targetParams)) {
       snapshot[key] = params[key];
       onChange(key, targetParams[key] as number | string);
     }
     playNote("C4", "2n");
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       for (const key of Object.keys(snapshot)) {
         onChange(key, snapshot[key] as number | string);
       }
+      isPlayingRef.current = false;
     }, 1200);
   }
 
   function checkAnswer() {
+    if (timerRef.current) clearTimeout(timerRef.current);
     let allCorrect = true;
     for (const [key, target] of Object.entries(targetParams)) {
       const current = params[key];
@@ -60,13 +68,14 @@ export function NodeCreate({
         if (Math.abs(Number(current) - target) > tolerance) { allCorrect = false; break; }
       }
     }
-    setAttempts((a) => a + 1);
     onConcept("match-waveform", allCorrect);
-    setFeedback(allCorrect ? "correct" : "wrong");
     if (allCorrect) {
-      setTimeout(onComplete, 900);
+      setFeedback("correct");
+      timerRef.current = setTimeout(onComplete, 900);
     } else {
-      setTimeout(() => setFeedback(null), 1200);
+      setWrongAttempts((n) => n + 1);
+      setFeedback("wrong");
+      timerRef.current = setTimeout(() => setFeedback(null), 1200);
     }
   }
 
@@ -99,7 +108,7 @@ export function NodeCreate({
         {feedback === "correct" ? "Correct! ✓" : feedback === "wrong" ? "Not quite — try again" : "Check"}
       </Button>
 
-      {attempts > 2 && feedback === "wrong" && (
+      {wrongAttempts >= 2 && feedback === "wrong" && (
         <p style={{ fontSize: 11, color: "var(--muted-foreground)", textAlign: "center" }}>
           Hint: listen to the target again and compare the waveform shape
         </p>
