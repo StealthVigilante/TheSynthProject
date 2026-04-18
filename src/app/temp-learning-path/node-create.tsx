@@ -58,6 +58,7 @@ export function NodeCreate({
 
   function checkAnswer() {
     if (timerRef.current) clearTimeout(timerRef.current);
+    isPlayingRef.current = false;
     let allCorrect = true;
     for (const [key, target] of Object.entries(targetParams)) {
       const current = params[key];
