@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 interface ReviewQuestion {
   concept: string;
@@ -53,6 +53,9 @@ export function NodeReview({ questions, mistakeLog, masteryLevel, onConcept, onC
   const selected = useMemo(() => selectQuestions(questions, mistakeLog), [questions, mistakeLog]);
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   const q = selected[index];
 
@@ -60,7 +63,8 @@ export function NodeReview({ questions, mistakeLog, masteryLevel, onConcept, onC
     const correct = optionIndex === q.correctIndex;
     onConcept(q.concept, correct);
     setFeedback(correct ? "correct" : "wrong");
-    setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
       setFeedback(null);
       if (index === selected.length - 1) onComplete();
       else setIndex((i) => i + 1);

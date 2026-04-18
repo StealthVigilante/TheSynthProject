@@ -220,17 +220,22 @@ function LearningPath() {
     if (correct) {
       setMasteryLevel((prev) => {
         const streak = (prev[concept] ?? 0) + 1;
+        return { ...prev, [concept]: streak >= 3 ? 0 : streak };
+      });
+      setMistakeLog((prev) => {
+        const streak = (masteryLevel[concept] ?? 0) + 1;
         if (streak >= 3) {
-          setMistakeLog((m) => { const next = { ...m }; delete next[concept]; return next; });
-          return { ...prev, [concept]: 0 };
+          const next = { ...prev };
+          delete next[concept];
+          return next;
         }
-        return { ...prev, [concept]: streak };
+        return prev;
       });
     } else {
       setMasteryLevel((prev) => ({ ...prev, [concept]: 0 }));
       setMistakeLog((prev) => ({ ...prev, [concept]: (prev[concept] ?? 0) + 1 }));
     }
-  }, []);
+  }, [masteryLevel]);
 
   const handleComplete = useCallback((nodeId: string) => {
     setCompletedNodes((prev) => new Set([...prev, nodeId]));
