@@ -22,7 +22,7 @@ function selectQuestions(
   mistakeLog: Record<string, number>,
   count = 5
 ): ReviewQuestion[] {
-  const recent = questions.slice(-Math.ceil(count * 0.4));
+  const recent = questions.slice(-Math.ceil(questions.length * 0.4));
   const highMistake = [...questions]
     .filter((q) => (mistakeLog[q.concept] ?? 0) > 0)
     .sort((a, b) => (mistakeLog[b.concept] ?? 0) - (mistakeLog[a.concept] ?? 0))
@@ -48,7 +48,8 @@ function selectQuestions(
   return deduped.slice(0, count);
 }
 
-export function NodeReview({ questions, mistakeLog, onConcept, onComplete }: NodeReviewProps) {
+export function NodeReview({ questions, mistakeLog, masteryLevel, onConcept, onComplete }: NodeReviewProps) {
+  void masteryLevel;
   const selected = useMemo(() => selectQuestions(questions, mistakeLog), [questions, mistakeLog]);
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -82,7 +83,7 @@ export function NodeReview({ questions, mistakeLog, onConcept, onComplete }: Nod
         <div
           style={{
             height: "100%",
-            width: `${(index / selected.length) * 100}%`,
+            width: `${((index + 1) / selected.length) * 100}%`,
             background: "var(--primary)",
             borderRadius: 2,
             transition: "width 300ms ease",
