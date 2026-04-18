@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { WaveformCanvas } from "./visuals";
 
@@ -31,23 +31,28 @@ interface NodeLessonProps {
 export function NodeLesson({ slides, getWaveform, onConcept, onComplete }: NodeLessonProps) {
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   const slide = slides[index];
   const isLast = index === slides.length - 1;
 
   function handleAnswer(optionIndex: number) {
     if (slide.type !== "mc") return;
+    if (feedback !== null) return;
     const correct = optionIndex === slide.correctIndex;
     setFeedback(correct ? "correct" : "wrong");
     onConcept(slide.question, correct);
+    if (timerRef.current) clearTimeout(timerRef.current);
     if (correct) {
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setFeedback(null);
         if (isLast) onComplete();
         else setIndex((i) => i + 1);
       }, 700);
     } else {
-      setTimeout(() => setFeedback(null), 900);
+      timerRef.current = setTimeout(() => setFeedback(null), 900);
     }
   }
 
@@ -102,7 +107,7 @@ export function NodeLesson({ slides, getWaveform, onConcept, onComplete }: NodeL
               <button
                 key={i}
                 onClick={() => handleAnswer(i)}
-                disabled={feedback === "correct"}
+                disabled={feedback !== null}
                 style={{
                   padding: "10px 14px",
                   borderRadius: 8,
@@ -118,7 +123,7 @@ export function NodeLesson({ slides, getWaveform, onConcept, onComplete }: NodeL
                   color: "var(--foreground)",
                   fontSize: 14,
                   textAlign: "left",
-                  cursor: feedback === "correct" ? "default" : "pointer",
+                  cursor: feedback !== null ? "default" : "pointer",
                   transition: "all 150ms",
                 }}
               >
