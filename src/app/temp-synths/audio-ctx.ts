@@ -1,6 +1,11 @@
 // src/app/temp-synths/audio-ctx.ts
 let _ctx: AudioContext | null = null;
 
+/**
+ * Returns the shared AudioContext. Must be called from inside a user-gesture
+ * event handler (e.g. noteOn). Calling before a gesture creates the context in
+ * a suspended state — audio will not play until the user interacts.
+ */
 export function getAudioContext(): AudioContext {
   if (!_ctx) _ctx = new AudioContext();
   if (_ctx.state === "suspended") void _ctx.resume();

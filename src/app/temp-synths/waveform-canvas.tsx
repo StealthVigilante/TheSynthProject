@@ -28,7 +28,7 @@ export function WaveformCanvas({ getWaveform, width = 320, height = 80 }: Wavefo
     const draw = () => {
       const data = getRef.current();
       ctx2.clearRect(0, 0, width, height);
-      ctx2.strokeStyle = "oklch(0.556 0 0 / 40%)";
+      ctx2.strokeStyle = "var(--border)";
       ctx2.lineWidth = 1;
       ctx2.beginPath();
       ctx2.moveTo(0, height / 2);
