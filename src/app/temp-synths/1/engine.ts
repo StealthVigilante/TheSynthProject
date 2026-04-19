@@ -66,7 +66,8 @@ export class Synth1Engine {
     this.envGain.gain.linearRampToValueAtTime(velocity, now + this.attack);
   }
 
-  noteOff(_note: string): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  noteOff(_: string): void {
     const now = this.ctx.currentTime;
     const held = this.envGain.gain.value;
     this.envGain.gain.cancelScheduledValues(now);

@@ -50,31 +50,33 @@ export default function Synth1Page() {
     return engineRef.current?.getWaveform() ?? new Float32Array(1024);
   }, []);
 
-  const handleWaveform = (v: string) => {
+  const handleWaveform = useCallback((v: string) => {
     setWaveformState(v);
     engineRef.current?.setWaveform(v as OscillatorType);
-  };
+  }, []);
 
-  const handleFilterFreq = (hz: number) => {
+  const handleFilterFreq = useCallback((hz: number) => {
     setFilterFreqState(hz);
     engineRef.current?.setFilterFreq(hz);
-  };
+  }, []);
 
-  const handleAttack = (s: number) => {
+  const handleAttack = useCallback((s: number) => {
     setAttackState(s);
     engineRef.current?.setAttack(s);
-  };
+  }, []);
 
-  const handleRelease = (s: number) => {
+  const handleRelease = useCallback((s: number) => {
     setReleaseState(s);
     engineRef.current?.setRelease(s);
-  };
+  }, []);
 
-  const handleReverb = () => {
-    const next = !reverb;
-    setReverbState(next);
-    engineRef.current?.setReverb(next);
-  };
+  const handleReverb = useCallback(() => {
+    setReverbState((prev) => {
+      const next = !prev;
+      engineRef.current?.setReverb(next);
+      return next;
+    });
+  }, []);
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
