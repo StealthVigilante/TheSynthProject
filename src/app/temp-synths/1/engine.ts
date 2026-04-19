@@ -52,6 +52,7 @@ export class Synth1Engine {
   noteOn(note: string, velocity = 0.8): void {
     if (this.ctx.state === "suspended") void this.ctx.resume();
     this.osc?.stop();
+    this.osc?.disconnect();
     const osc = this.ctx.createOscillator();
     osc.type = this.waveform;
     osc.frequency.value = noteNameToFreq(note);
@@ -72,7 +73,7 @@ export class Synth1Engine {
     this.envGain.gain.setValueAtTime(held, now);
     this.envGain.gain.linearRampToValueAtTime(0, now + this.release);
     this.osc?.stop(now + this.release + 0.05);
-    this.osc = null;
+    // Keep reference so noteOn can disconnect the decaying oscillator
   }
 
   setWaveform(t: OscillatorType): void {
@@ -102,7 +103,13 @@ export class Synth1Engine {
 
   dispose(): void {
     this.osc?.stop();
-    this.analyser.disconnect();
+    this.osc?.disconnect();
     this.envGain.disconnect();
+    this.filter.disconnect();
+    this.dryGain.disconnect();
+    this.reverbWet.disconnect();
+    this.reverb.input.disconnect();
+    this.reverb.output.disconnect();
+    this.analyser.disconnect();
   }
 }
