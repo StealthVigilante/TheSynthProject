@@ -111,7 +111,7 @@ export class Synth2Engine {
       sub.connect(this.subGain);
       sub.start();
       this.subOsc = sub;
-      this.subGain.gain.value = 0.5;
+      this.subGain.gain.setTargetAtTime(0.5, this.ctx.currentTime, 0.01);
     }
 
     this.currentNote = note;
@@ -131,8 +131,11 @@ export class Synth2Engine {
     this.envGain.gain.linearRampToValueAtTime(0, now + this.release);
     const stopAt = now + this.release + 0.05;
     this.osc?.stop(stopAt);
+    this.osc?.disconnect();
+    this.osc = null;
     this.subOsc?.stop(stopAt);
-    // Keep references for cleanup on next noteOn
+    this.subOsc?.disconnect();
+    this.subOsc = null;
   }
 
   setWaveform(t: OscillatorType): void {

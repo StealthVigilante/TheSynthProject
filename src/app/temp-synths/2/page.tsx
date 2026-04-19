@@ -43,7 +43,7 @@ function EnvelopeCurve({ attack, release, sustainOn }: { attack: number; release
       <path d={d} fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={aX} cy={top} r={3} fill="var(--primary)" />
       <circle cx={sX} cy={mid} r={3} fill="var(--primary)" />
-      <circle cx={rEnd} cy={bot} r={3} fill="var(--primary)" />
+      <circle cx={Math.min(rEnd, W - 3)} cy={bot} r={3} fill="var(--primary)" />
     </svg>
   );
 }
