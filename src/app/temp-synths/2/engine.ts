@@ -90,8 +90,10 @@ export class Synth2Engine {
     if (this.ctx.state === "suspended") void this.ctx.resume();
     this.osc?.stop();
     this.osc?.disconnect();
+    this.osc = null;
     this.subOsc?.stop();
     this.subOsc?.disconnect();
+    this.subOsc = null;
 
     const freq = noteNameToFreq(note);
 
@@ -125,9 +127,7 @@ export class Synth2Engine {
   noteOff(note: string): void {
     if (note !== this.currentNote) return;
     const now = this.ctx.currentTime;
-    const held = this.envGain.gain.value;
-    this.envGain.gain.cancelScheduledValues(now);
-    this.envGain.gain.setValueAtTime(held, now);
+    this.envGain.gain.cancelAndHoldAtTime(now);
     this.envGain.gain.linearRampToValueAtTime(0, now + this.release);
     const stopAt = now + this.release + 0.05;
     this.osc?.stop(stopAt);
