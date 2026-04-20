@@ -10,10 +10,7 @@ export function useBreakpoint() {
     function update() {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      if (mobile) {
-        // landscape width = portrait height when phone is tilted
-        setMobileKeyWidth(Math.floor((window.innerHeight - 16) / 14));
-      }
+      setMobileKeyWidth(mobile ? Math.floor((window.innerHeight - 16) / 14) : 40);
     }
     update();
     window.addEventListener("resize", update);
