@@ -1,7 +1,6 @@
 "use client";
 
 import { BookOpen, Star, Ear, Lock, Check, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
 
 export type NodeType = "lesson" | "review" | "create";
 export type NodeStatus = "locked" | "available" | "completed";
@@ -26,7 +25,6 @@ interface PathMapProps {
   activeNodeId: string | null;
   completedNodes: Set<string>;
   onNodeClick: (id: string) => void;
-  renderPanel: (nodeId: string) => ReactNode;
 }
 
 const NODE_ICONS: Record<NodeType, typeof BookOpen> = {
@@ -35,7 +33,7 @@ const NODE_ICONS: Record<NodeType, typeof BookOpen> = {
   create: Ear,
 };
 
-export function PathMap({ phases, activeNodeId, completedNodes, onNodeClick, renderPanel }: PathMapProps) {
+export function PathMap({ phases, activeNodeId, completedNodes, onNodeClick }: PathMapProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0, paddingBottom: 80 }}>
       {phases.map((phase, pi) => {
@@ -88,22 +86,6 @@ export function PathMap({ phases, activeNodeId, completedNodes, onNodeClick, ren
                     onClick={() => node.status !== "locked" && onNodeClick(node.id)}
                   />
 
-                  {/* Inline panel */}
-                  {isActive && (
-                    <div
-                      style={{
-                        width: "100%",
-                        maxWidth: 380,
-                        background: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        padding: 20,
-                        marginTop: 8,
-                      }}
-                    >
-                      {renderPanel(node.id)}
-                    </div>
-                  )}
                 </div>
               );
             })}

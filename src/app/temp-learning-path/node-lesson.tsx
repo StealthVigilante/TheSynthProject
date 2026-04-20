@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformCanvas } from "./visuals";
 
 export interface VisualSlide {
@@ -24,11 +25,13 @@ export type Slide = VisualSlide | McSlide;
 interface NodeLessonProps {
   slides: Slide[];
   getWaveform: () => Float32Array;
+  noteOn: (note: string, velocity: number) => void;
+  noteOff: (note: string) => void;
   onConcept: (concept: string, correct: boolean) => void;
   onComplete: () => void;
 }
 
-export function NodeLesson({ slides, getWaveform, onConcept, onComplete }: NodeLessonProps) {
+export function NodeLesson({ slides, getWaveform, noteOn, noteOff, onConcept, onComplete }: NodeLessonProps) {
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,8 +88,9 @@ export function NodeLesson({ slides, getWaveform, onConcept, onComplete }: NodeL
           <p style={{ fontSize: 18, fontWeight: 700 }}>{slide.title}</p>
           <p style={{ fontSize: 14, color: "var(--muted-foreground)", lineHeight: 1.6 }}>{slide.body}</p>
           {slide.visual === "waveform" && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 0" }}>
               <WaveformCanvas getWaveform={getWaveform} width={280} height={80} />
+              <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={4} octaves={1} />
             </div>
           )}
           {(slide.visual === "static-sine" || slide.visual === "static-square" || slide.visual === "static-triangle" || slide.visual === "static-saw") && (

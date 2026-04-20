@@ -256,21 +256,21 @@ values (
 insert into public.exercises (lesson_id, exercise_type, sort_order, title, instructions, content) values
 (
   (select id from public.lessons where slug = 'intro' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'info', 1, 'Welcome to Synthesis!',
-  'A synthesizer is an electronic instrument that generates sound using electrical signals. Unlike a piano or guitar, a synth creates sound from scratch using oscillators — electronic circuits that produce repeating waveforms.',
-  '{"text": "The Osci Mono is a monophonic subtractive synthesizer. \"Monophonic\" means it plays one note at a time. \"Subtractive\" means it starts with a harmonically rich waveform and then sculpts the sound by filtering out frequencies. This is the most classic form of synthesis and the foundation of countless iconic sounds."}'::jsonb
+  'info', 1, 'What is a Synthesizer?',
+  'A synth generates sound electronically — from scratch. No strings, no air. Just waveforms shaped by circuits.',
+  '{"text": "The Osci Mono is a subtractive synth: it starts with a rich waveform and sculpts it by filtering frequencies. One note at a time. Infinite tones."}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'intro' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 2, 'Your First Sound',
-  'Let''s hear what the Osci Mono sounds like with its default settings. Click "Listen" to hear a sawtooth wave — the raw building block of subtractive synthesis.',
-  '{"params_to_set": {"oscillator.type": "sawtooth", "volume": -6}, "note_sequence": ["C4", "E4", "G4", "C5"]}'::jsonb
+  'info', 2, 'The Controls',
+  'Every section shapes a different part of the sound. Together they give you total control over the tone.',
+  '{"text": "Oscillator — the raw waveform.\nFilter — sculpts the tone.\nEnvelope — shapes the volume over time.\nKeyboard — plays the notes."}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'intro' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'free_play', 3, 'Try It Yourself',
-  'Now it''s your turn! Use your computer keyboard to play notes. The keys A through J play the white notes from C4 to B4. Try playing a simple melody.',
-  '{"duration_seconds": 20, "prompt": "Try playing the notes A, S, D, F on your keyboard to hear C, D, E, F"}'::jsonb
+  'free_play', 3, 'Try It',
+  'Press keys on your keyboard and make some noise. Keys A–J play C4 to B4.',
+  '{"duration_seconds": 20, "prompt": "Play anything. Get a feel for the sound."}'::jsonb
 );
 
 -- Lesson 2: Oscillator Waveforms
@@ -287,33 +287,33 @@ values (
 insert into public.exercises (lesson_id, exercise_type, sort_order, title, instructions, content) values
 (
   (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'info', 1, 'The Four Basic Waveforms',
-  'Every oscillator produces a repeating waveform. The shape of this waveform determines the timbre (tonal quality) of the sound. There are four fundamental waveforms in synthesis:',
-  '{"text": "• Sine (∿) — Pure tone, no harmonics. Smooth and clean like a flute.\n• Square (⊓) — Hollow, clarinet-like. Contains only odd harmonics.\n• Sawtooth (⩘) — Bright and buzzy. Contains all harmonics. Great for leads and basses.\n• Triangle (△) — Similar to sine but slightly brighter. Contains weak odd harmonics."}'::jsonb
+  'waveform_display', 1, 'See the Wave',
+  'Play a note and watch the waveform. The shape is the sound.',
+  '{}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
   'listen', 2, 'Sine Wave',
-  'The sine wave is the simplest waveform — a pure tone with no overtones. Listen to how clean it sounds.',
+  'Pure. No harmonics — just one frequency. Clean like a flute.',
   '{"params_to_set": {"oscillator.type": "sine"}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 3, 'Square Wave',
-  'The square wave sounds hollow and woodwind-like. Notice how it has more character than the sine wave.',
+  'listen', 3, 'Sawtooth Wave',
+  'Bright and buzzy. All harmonics present. The classic synth tone.',
+  '{"params_to_set": {"oscillator.type": "sawtooth"}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
+),
+(
+  (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
+  'listen', 4, 'Square Wave',
+  'Hollow and reedy. Only odd harmonics — sounds like a clarinet.',
   '{"params_to_set": {"oscillator.type": "square"}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'quiz_mc', 4, 'Waveform Quiz',
-  'Which waveform contains ALL harmonics (both odd and even) and sounds the brightest?',
-  '{"question": "Which waveform contains ALL harmonics and sounds the brightest?", "options": ["Sine", "Square", "Sawtooth", "Triangle"], "correct_index": 2}'::jsonb
-),
-(
-  (select id from public.lessons where slug = 'waveforms' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'free_play', 5, 'Explore Waveforms',
-  'Switch between different waveforms using the selector and play some notes. Listen to how each waveform sounds different!',
-  '{"duration_seconds": 25, "prompt": "Use the waveform selector to try all four types while playing notes."}'::jsonb
+  'free_play', 5, 'Switch Waveforms',
+  'Use the waveform selector and play notes. Hear how each shape sounds different.',
+  '{"duration_seconds": 25, "prompt": "Try all four waveforms while playing."}'::jsonb
 );
 
 -- Lesson 3: The Filter
@@ -330,33 +330,27 @@ values (
 insert into public.exercises (lesson_id, exercise_type, sort_order, title, instructions, content) values
 (
   (select id from public.lessons where slug = 'filter' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'info', 1, 'What is a Filter?',
-  'The filter is the heart of subtractive synthesis. It removes (subtracts) certain frequencies from the oscillator''s sound. The most common type is the low-pass filter, which lets low frequencies through and cuts high frequencies.',
-  '{"text": "Key filter parameters:\n• Cutoff Frequency — The point where the filter starts cutting. Lower = darker, higher = brighter.\n• Resonance (Q) — Boosts frequencies right at the cutoff point, creating a characteristic \"peak\" or \"squelch\"."}'::jsonb
+  'filter_display', 1, 'The Filter Curve',
+  'Turn Cutoff and Resonance — watch the curve shift live. Low cutoff = dark. High resonance = that squelchy peak.',
+  '{}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'filter' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 2, 'Low Cutoff',
-  'Listen to the sawtooth wave with a very low filter cutoff. Notice how dark and muffled it sounds — most of the harmonics are being filtered out.',
+  'listen', 2, 'Filter Closed',
+  'Low cutoff — most harmonics blocked. The sound goes dark and muffled.',
   '{"params_to_set": {"oscillator.type": "sawtooth", "filter.frequency": 400}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'filter' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 3, 'High Cutoff',
-  'Now listen with the cutoff wide open. The sound is bright and full — all harmonics pass through.',
+  'listen', 3, 'Filter Open',
+  'High cutoff — all harmonics through. Bright and full.',
   '{"params_to_set": {"oscillator.type": "sawtooth", "filter.frequency": 8000}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'filter' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
   'tweak', 4, 'Find the Sweet Spot',
-  'Turn the Cutoff knob to find a frequency around 1200 Hz — a warm, balanced tone that keeps the character of the sawtooth but tames the harshness.',
+  'Dial the Cutoff to around 1200 Hz — warm and balanced.',
   '{"target_param": "filter.frequency", "target_value": 1200, "tolerance": 200}'::jsonb
-),
-(
-  (select id from public.lessons where slug = 'filter' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'quiz_mc', 5, 'Filter Quiz',
-  'What does increasing the Resonance (Q) parameter do?',
-  '{"question": "What does increasing the Resonance (Q) parameter do?", "options": ["Makes the sound quieter", "Boosts frequencies around the cutoff point", "Lowers the pitch", "Adds reverb"], "correct_index": 1}'::jsonb
 );
 
 -- Lesson 4: Amp Envelope (ADSR)
@@ -373,39 +367,27 @@ values (
 insert into public.exercises (lesson_id, exercise_type, sort_order, title, instructions, content) values
 (
   (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'info', 1, 'The ADSR Envelope',
-  'The amplitude envelope controls how the volume of your sound changes over time when you press and release a key. It has four stages:',
-  '{"text": "• Attack — How long it takes for the sound to reach full volume after pressing a key. Short = percussive, long = swelling pad.\n• Decay — How long it takes to drop from peak to the sustain level.\n• Sustain — The volume level held while the key is pressed. This is a level, not a time.\n• Release — How long the sound fades out after releasing the key."}'::jsonb
+  'adsr_display', 1, 'The ADSR Shape',
+  'Adjust the knobs — the graph updates live. Attack = fade in. Decay = drop to sustain. Sustain = hold level. Release = fade out.',
+  '{}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 2, 'Plucky Sound',
-  'A short attack, short decay, low sustain, and short release creates a plucky, percussive sound.',
+  'listen', 2, 'Plucky',
+  'Short attack, short decay, low sustain. Percussive — like a plucked string.',
   '{"params_to_set": {"envelope.attack": 0.005, "envelope.decay": 0.15, "envelope.sustain": 0.1, "envelope.release": 0.2}, "note_sequence": ["C4", "E4", "G4", "C5"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'listen', 3, 'Pad Sound',
-  'A long attack, medium decay, high sustain, and long release creates a smooth, evolving pad.',
+  'listen', 3, 'Pad',
+  'Long attack, high sustain, long release. The sound swells in and lingers.',
   '{"params_to_set": {"envelope.attack": 0.8, "envelope.decay": 0.5, "envelope.sustain": 0.8, "envelope.release": 1.5}, "note_sequence": ["C4", "E4", "G4"]}'::jsonb
 ),
 (
   (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'tweak', 4, 'Create a Slow Attack',
-  'Set the Attack to around 0.5 seconds to create a sound that slowly fades in when you press a key.',
+  'tweak', 4, 'Slow Attack',
+  'Set Attack to around 0.5s — the note fades in instead of cutting in sharp.',
   '{"target_param": "envelope.attack", "target_value": 0.5, "tolerance": 0.1}'::jsonb
-),
-(
-  (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'quiz_mc', 5, 'Envelope Quiz',
-  'Which ADSR parameter controls how long the sound takes to fade out after you release the key?',
-  '{"question": "Which ADSR parameter controls how long the sound fades out after releasing the key?", "options": ["Attack", "Decay", "Sustain", "Release"], "correct_index": 3}'::jsonb
-),
-(
-  (select id from public.lessons where slug = 'envelope' and synth_model_id = (select id from public.synth_models where slug = 'osci-mono')),
-  'free_play', 6, 'Sculpt Your Sound',
-  'Experiment with different ADSR settings. Try making a plucky bass, a smooth pad, and a sharp stab!',
-  '{"duration_seconds": 30, "prompt": "Try different envelope shapes: plucky (short attack/decay), pad (long attack/release), stab (short everything)."}'::jsonb
 );
 
 -- Lesson 5: Filter Envelope

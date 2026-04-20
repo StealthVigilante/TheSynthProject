@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Exercise, ExerciseType, Json } from "@/lib/supabase/types";
 import type { EngineType, ParamValues } from "@/lib/synth-engine";
@@ -11,6 +12,9 @@ import { ExerciseMatchSound } from "./exercises/exercise-match-sound";
 import { ExerciseQuizMc } from "./exercises/exercise-quiz-mc";
 import { ExerciseQuizParam } from "./exercises/exercise-quiz-param";
 import { ExerciseFreePlay } from "./exercises/exercise-free-play";
+import { ExerciseAdsrDisplay } from "./exercises/exercise-adsr-display";
+import { ExerciseFilterDisplay } from "./exercises/exercise-filter-display";
+import { ExerciseWaveformDisplay } from "./exercises/exercise-waveform-display";
 import { XpRewardModal } from "./xp-reward-modal";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,6 +29,8 @@ interface ExercisePlayerProps {
   synthSlug: string;
   setParam: (key: string, value: number | string) => void;
   playNote: (note: string, duration?: string) => void;
+  getWaveform: () => Float32Array;
+  onSlideChange?: (index: number) => void;
 }
 
 interface CompletionResult {
@@ -46,6 +52,8 @@ export function ExercisePlayer({
   synthSlug,
   setParam,
   playNote,
+  getWaveform,
+  onSlideChange,
 }: ExercisePlayerProps) {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,6 +64,10 @@ export function ExercisePlayer({
 
   const exercise = exercises[currentIndex];
   const progress = ((currentIndex) / exercises.length) * 100;
+
+  useEffect(() => {
+    onSlideChange?.(currentIndex);
+  }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExerciseComplete = useCallback(
     async (score = 100) => {
@@ -128,13 +140,18 @@ export function ExercisePlayer({
       )}
 
       {/* Exercise component */}
-      <div className="rounded-lg border bg-card p-6">
+      <div
+        key={currentIndex}
+        className="rounded-lg border bg-card p-6"
+        style={{ animation: "exercise-slide-in 0.3s ease-out both" }}
+      >
         <ExerciseRenderer
           exercise={exercise}
           engineType={engineType}
           params={params}
           setParam={setParam}
           playNote={playNote}
+          getWaveform={getWaveform}
           onComplete={handleExerciseComplete}
         />
       </div>
@@ -145,18 +162,21 @@ export function ExercisePlayer({
         </p>
       )}
 
-      {/* XP Reward Modal */}
-      {showReward && completionResult && (
-        <XpRewardModal
-          xpEarned={completionResult.xp_earned}
-          totalXp={completionResult.total_xp}
-          newLevel={completionResult.new_level}
-          newStreak={completionResult.new_streak ?? 0}
-          unlockedParams={completionResult.unlocked_params}
-          firstCompletion={completionResult.first_completion}
-          onClose={handleRewardClose}
-        />
-      )}
+      {/* XP Reward Modal — portalled to body so overflow/transform parents can't clip it */}
+      {showReward && completionResult &&
+        createPortal(
+          <XpRewardModal
+            xpEarned={completionResult.xp_earned}
+            totalXp={completionResult.total_xp}
+            newLevel={completionResult.new_level}
+            newStreak={completionResult.new_streak ?? 0}
+            unlockedParams={completionResult.unlocked_params}
+            firstCompletion={completionResult.first_completion}
+            onClose={handleRewardClose}
+          />,
+          document.body
+        )
+      }
     </div>
   );
 }
@@ -167,6 +187,7 @@ function ExerciseRenderer({
   params,
   setParam,
   playNote,
+  getWaveform,
   onComplete,
 }: {
   exercise: Exercise;
@@ -174,6 +195,7 @@ function ExerciseRenderer({
   params: ParamValues;
   setParam: (key: string, value: number | string) => void;
   playNote: (note: string, duration?: string) => void;
+  getWaveform: () => Float32Array;
   onComplete: (score?: number) => void;
 }) {
   switch (exercise.exercise_type) {
@@ -241,6 +263,34 @@ function ExerciseRenderer({
         <ExerciseFreePlay
           instructions={exercise.instructions}
           content={exercise.content}
+          onComplete={() => onComplete(100)}
+        />
+      );
+    case "adsr_display":
+      return (
+        <ExerciseAdsrDisplay
+          instructions={exercise.instructions}
+          content={exercise.content}
+          params={params}
+          onComplete={() => onComplete(100)}
+        />
+      );
+    case "filter_display":
+      return (
+        <ExerciseFilterDisplay
+          instructions={exercise.instructions}
+          content={exercise.content}
+          params={params}
+          onComplete={() => onComplete(100)}
+        />
+      );
+    case "waveform_display":
+      return (
+        <ExerciseWaveformDisplay
+          instructions={exercise.instructions}
+          content={exercise.content}
+          params={params}
+          getWaveform={getWaveform}
           onComplete={() => onComplete(100)}
         />
       );

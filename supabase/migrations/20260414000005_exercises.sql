@@ -6,7 +6,10 @@ create type public.exercise_type as enum (
   'match_sound',
   'quiz_mc',
   'quiz_param',
-  'free_play'
+  'free_play',
+  'adsr_display',
+  'filter_display',
+  'waveform_display'
 );
 
 -- Exercises table (ordered within a lesson)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Flame, Zap, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,17 @@ interface TopBarProps {
   displayName: string | null;
 }
 
+function isLessonRoute(pathname: string) {
+  const parts = pathname.split("/").filter(Boolean);
+  return parts[0] === "learn" && parts.length >= 3;
+}
+
 export function TopBar({ xp, streak, displayName }: TopBarProps) {
-  const router = useRouter();
+  const router   = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
+
+  if (isLessonRoute(pathname)) return null;
 
   async function handleSignOut() {
     await supabase.auth.signOut();

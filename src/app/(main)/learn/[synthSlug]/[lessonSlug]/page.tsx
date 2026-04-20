@@ -18,26 +18,22 @@ export default async function LessonPage({
   if (!user) redirect("/login");
 
   // Get synth
-  const { data: synthData, error: synthError } = await supabase
+  const { data: synthData } = await supabase
     .from("synth_models")
     .select("*")
     .eq("slug", synthSlug)
     .single();
 
-  console.log("[LessonPage] synthSlug:", synthSlug, "synthData:", synthData?.id ?? null, "error:", synthError?.message);
-
   const synth = synthData as unknown as SynthModel | null;
   if (!synth) notFound();
 
   // Get lesson
-  const { data: lessonData, error: lessonError } = await supabase
+  const { data: lessonData } = await supabase
     .from("lessons")
     .select("*")
     .eq("synth_model_id", synth.id)
     .eq("slug", lessonSlug)
     .single();
-
-  console.log("[LessonPage] lessonSlug:", lessonSlug, "lessonData:", lessonData?.id ?? null, "error:", lessonError?.message);
 
   const lesson = lessonData as unknown as Lesson | null;
   if (!lesson) notFound();
@@ -97,13 +93,17 @@ export default async function LessonPage({
     .eq("synth_model_id", synth.id)
     .single();
 
-  const unlockedParams = userSynthData
+  // Always merge current lesson's params so they're accessible during the lesson
+  const dbUnlocked = userSynthData
     ? (userSynthData as unknown as UserSynth).unlocked_params
-    : null;
+    : [];
+  const lessonParams = (lesson.unlocks_params as string[]) ?? [];
+  const unlockedParams = [...new Set([...dbUnlocked, ...lessonParams])];
 
   return (
     <LessonPageClient
       lessonId={lesson.id}
+      lessonSlug={lessonSlug}
       lessonTitle={lesson.title}
       exercises={exercises}
       synthSlug={synthSlug}

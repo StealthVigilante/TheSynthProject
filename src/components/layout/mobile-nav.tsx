@@ -19,8 +19,14 @@ const navItems = [
   { href: "/leaderboard", label: "Ranks", icon: Trophy },
 ];
 
+function isLessonRoute(pathname: string) {
+  const parts = pathname.split("/").filter(Boolean);
+  return parts[0] === "learn" && parts.length >= 3;
+}
+
 export function MobileNav() {
   const pathname = usePathname();
+  if (isLessonRoute(pathname)) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t bg-background">

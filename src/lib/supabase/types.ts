@@ -13,7 +13,10 @@ export type ExerciseType =
   | "match_sound"
   | "quiz_mc"
   | "quiz_param"
-  | "free_play";
+  | "free_play"
+  | "adsr_display"
+  | "filter_display"
+  | "waveform_display";
 
 export interface Database {
   public: {

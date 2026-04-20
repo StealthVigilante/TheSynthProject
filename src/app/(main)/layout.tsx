@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { ClientMain } from "@/components/layout/client-main";
 
 interface ProfilePartial {
   xp: number;
@@ -42,9 +43,7 @@ export default async function MainLayout({
           streak={profile?.streak ?? 0}
           displayName={profile?.display_name ?? profile?.username ?? "User"}
         />
-        <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
-          {children}
-        </main>
+        <ClientMain>{children}</ClientMain>
       </div>
       <MobileNav />
     </div>

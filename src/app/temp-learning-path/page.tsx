@@ -87,12 +87,6 @@ const SQUARE_TRI_SAW_SLIDES: Slide[] = [
     visual: "static-triangle",
   },
   {
-    type: "visual",
-    title: "Sawtooth Wave",
-    body: "The sawtooth ramps up then drops instantly. It contains ALL harmonics — both odd and even. This makes it the brightest, richest, harshest wave. It's the go-to for leads and basses.",
-    visual: "static-saw",
-  },
-  {
     type: "mc",
     question: "Which waveform sounds most hollow and woody (like a clarinet)?",
     options: ["Square", "Sine", "Sawtooth", "Triangle"],
@@ -101,17 +95,23 @@ const SQUARE_TRI_SAW_SLIDES: Slide[] = [
   },
   {
     type: "mc",
-    question: "Which waveform contains both odd AND even harmonics?",
-    options: ["Sawtooth", "Sine", "Square", "Triangle"],
-    correctIndex: 0,
-    explanation: "Sawtooth has all harmonics — that's why it sounds the richest and brightest.",
-  },
-  {
-    type: "mc",
     question: "Triangle vs Square: the triangle sounds ___",
     options: ["Softer — harmonics roll off faster", "Harsher — more harmonics", "Identical — same shape", "Brighter — more highs"],
     correctIndex: 0,
     explanation: "Both have only odd harmonics, but triangle's decrease in amplitude much faster → softer.",
+  },
+  {
+    type: "visual",
+    title: "Sawtooth Wave",
+    body: "The sawtooth ramps up then drops instantly. It contains ALL harmonics — both odd and even. This makes it the brightest, richest, harshest wave. It's the go-to for leads and basses.",
+    visual: "static-saw",
+  },
+  {
+    type: "mc",
+    question: "Which waveform contains both odd AND even harmonics?",
+    options: ["Sawtooth", "Sine", "Square", "Triangle"],
+    correctIndex: 0,
+    explanation: "Sawtooth has all harmonics — that's why it sounds the richest and brightest.",
   },
 ];
 
@@ -249,6 +249,8 @@ function LearningPath() {
           <NodeLesson
             slides={WHAT_IS_SOUND_SLIDES}
             getWaveform={getWaveform}
+            noteOn={noteOn}
+            noteOff={noteOff}
             onConcept={handleConcept}
             onComplete={() => handleComplete("what-is-sound")}
           />
@@ -258,6 +260,8 @@ function LearningPath() {
           <NodeLesson
             slides={SINE_SLIDES}
             getWaveform={getWaveform}
+            noteOn={noteOn}
+            noteOff={noteOff}
             onConcept={handleConcept}
             onComplete={() => handleComplete("sine-wave")}
           />
@@ -267,6 +271,8 @@ function LearningPath() {
           <NodeLesson
             slides={SQUARE_TRI_SAW_SLIDES}
             getWaveform={getWaveform}
+            noteOn={noteOn}
+            noteOff={noteOff}
             onConcept={handleConcept}
             onComplete={() => handleComplete("square-tri-saw")}
           />
@@ -348,10 +354,73 @@ function LearningPath() {
             activeNodeId={activeNodeId}
             completedNodes={completedNodes}
             onNodeClick={handleNodeClick}
-            renderPanel={renderPanel}
           />
         </div>
       </div>
+
+      {/* Fullscreen lesson overlay */}
+      {activeNodeId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            background: "var(--background)",
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+          }}
+        >
+          {/* Overlay header */}
+          <div
+            style={{
+              height: 48,
+              borderBottom: "1px solid var(--border)",
+              display: "flex",
+              alignItems: "center",
+              padding: "0 16px",
+              gap: 12,
+              position: "sticky",
+              top: 0,
+              background: "var(--background)",
+              zIndex: 10,
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setActiveNodeId(null)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 10px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--card)",
+                color: "var(--foreground)",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+
+          {/* Overlay content */}
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              justifyContent: "center",
+              padding: "32px 16px 80px",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: 480 }}>
+              {renderPanel(activeNodeId)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
