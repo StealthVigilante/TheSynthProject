@@ -45,7 +45,6 @@ export class Synth3Engine {
   lfoDepth = 30;
   lfoRoute: "pitch" | "filter" = "pitch";
 
-  private currentStopTime = 0;
 
   constructor() {
     this.ctx = getAudioContext();
@@ -104,9 +103,9 @@ export class Synth3Engine {
   noteOn(note: string, velocity = 0.8): void {
     if (this.ctx.state === "suspended") void this.ctx.resume();
     // Stop previous oscs cleanly
-    this.osc1?.stop();
+    try { this.osc1?.stop(); } catch { /* already stopped */ }
     this.osc1?.disconnect();
-    this.osc2?.stop();
+    try { this.osc2?.stop(); } catch { /* already stopped */ }
     this.osc2?.disconnect();
 
     const freq = noteNameToFreq(note);
@@ -166,11 +165,8 @@ export class Synth3Engine {
     this.filter.frequency.linearRampToValueAtTime(this.filterCutoff, now + this.filterEnvRelease);
 
     const stopAt = now + Math.max(this.ampRelease, this.filterEnvRelease) + 0.05;
-    this.currentStopTime = stopAt;
     this.osc1?.stop(stopAt);
-    this.osc1?.disconnect();
     this.osc2?.stop(stopAt);
-    this.osc2?.disconnect();
     this.osc1 = null;
     this.osc2 = null;
   }
@@ -250,8 +246,6 @@ export class Synth3Engine {
         try { this.lfoPitchGate.disconnect(); } catch { /* ok */ }
         this.lfoPitchGate.connect(this.osc1.detune);
         this.lfoPitchGate.connect(this.osc2.detune);
-        // Reconnect filter gate to filter (was disconnected)
-        this.lfoFilterGate.connect(this.filter.frequency);
       }
     } else {
       this.lfoPitchGate.gain.setTargetAtTime(0, now, 0.02);
