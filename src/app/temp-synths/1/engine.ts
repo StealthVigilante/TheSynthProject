@@ -10,6 +10,7 @@ export class Synth1Engine {
   private reverb: { input: GainNode; output: GainNode };
   private analyser: AnalyserNode;
   private buf: Float32Array;
+  private fftBuf: Float32Array;
 
   waveform: OscillatorType = "sine";
   filterFreq = 4000;
@@ -38,6 +39,7 @@ export class Synth1Engine {
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 1024;
     this.buf = new Float32Array(this.analyser.fftSize);
+    this.fftBuf = new Float32Array(this.analyser.frequencyBinCount);
 
     // Wire up
     this.envGain.connect(this.filter);
@@ -103,9 +105,8 @@ export class Synth1Engine {
   }
 
   getFFT(): Float32Array {
-    const buf = new Float32Array(this.analyser.frequencyBinCount);
-    this.analyser.getFloatFrequencyData(buf);
-    return buf;
+    this.analyser.getFloatFrequencyData(this.fftBuf);
+    return this.fftBuf;
   }
 
   get sampleRate(): number {
