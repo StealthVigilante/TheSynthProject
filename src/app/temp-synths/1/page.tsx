@@ -39,6 +39,8 @@ export default function Synth1Page() {
   const [attack, setAttackState] = useState(0.02);
   const [release, setReleaseState] = useState(0.5);
   const [reverb, setReverbState] = useState(false);
+  const [startOctave, setStartOctave] = useState(3);
+  const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     engineRef.current = new Synth1Engine();
@@ -212,13 +214,57 @@ export default function Synth1Page() {
     </div>
   );
 
+  const octaveNavStyle: React.CSSProperties = {
+    background: "none",
+    border: "1px solid var(--border)",
+    borderRadius: 6,
+    color: "var(--foreground)",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 600,
+    lineHeight: 1,
+    padding: "2px 8px",
+  };
+
   const keyboard = (
     <div style={{ padding: "8px 12px" }}>
+      {!isMobile && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 6,
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            style={octaveNavStyle}
+            onClick={() => setStartOctave((o) => Math.max(1, o - 1))}
+            disabled={startOctave <= 1}
+            aria-label="Octave down"
+          >
+            −
+          </button>
+          <span style={{ fontSize: 11, color: "var(--muted-foreground)", minWidth: 52, textAlign: "center" }}>
+            Oct {startOctave}–{startOctave + 1}
+          </span>
+          <button
+            style={octaveNavStyle}
+            onClick={() => setStartOctave((o) => Math.min(6, o + 1))}
+            disabled={startOctave >= 6}
+            aria-label="Octave up"
+          >
+            +
+          </button>
+        </div>
+      )}
       <PianoKeyboard
         onNoteOn={noteOn}
         onNoteOff={noteOff}
-        startOctave={3}
-        octaves={isMobile ? 2 : 3}
+        startOctave={startOctave}
+        octaves={2}
+        activeNotes={activeNotes}
         whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
         whiteKeyHeight={isMobile ? 80 : 72}
       />
