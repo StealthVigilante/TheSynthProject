@@ -145,5 +145,291 @@ export default function Synth1HardwarePage() {
     };
   }, [isMobile, noteOn, noteOff]);
 
-  return <div style={{ color: "#fff", padding: 40 }}>WIP</div>;
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: "0.3em",
+    color: "#404040",
+    fontFamily: "Arial",
+    textTransform: "uppercase",
+    marginBottom: 12,
+    borderBottom: "1px solid #1a1a1a",
+    paddingBottom: 8,
+  };
+
+  const sectionPanel: React.CSSProperties = {
+    background: "#0a0a0a",
+    border: "1px solid #1e1e1e",
+    borderTop: "2px solid #00d4ff",
+    borderRadius: 5,
+    padding: "14px 12px",
+    textAlign: "center",
+  };
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "calc(100dvh - 48px)",
+      background: "#0a0a0a",
+    }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* Top face — 3D lid */}
+        <div style={{
+          width: 760,
+          height: 18,
+          background: "linear-gradient(180deg, #2e2e2e, #1e1e1e)",
+          borderRadius: "12px 12px 0 0",
+          border: "1px solid #3a3a3a",
+          borderBottom: "none",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+          transform: "perspective(500px) rotateX(-18deg) scaleY(0.55)",
+          transformOrigin: "bottom center",
+          marginBottom: -1,
+        }} />
+
+        {/* Chassis body */}
+        <div style={{
+          background: "linear-gradient(175deg, #1e1e1e 0%, #141414 60%, #0e0e0e 100%)",
+          borderRadius: "0 0 10px 10px",
+          border: "1px solid #282828",
+          borderTop: "1px solid #3a3a3a",
+          boxShadow: `
+            inset 0 1px 0 rgba(255,255,255,0.04),
+            -5px 0 0 #0c0c0c,
+            5px 0 0 #0c0c0c,
+            0 5px 0 #080808,
+            0 7px 0 #060606,
+            0 9px 0 #040404,
+            0 18px 50px rgba(0,0,0,0.95)
+          `,
+          width: 760,
+        }}>
+          {/* Faceplate */}
+          <div style={{
+            margin: 14,
+            background: "#0f0f0f",
+            borderRadius: 6,
+            border: "1px solid #1a1a1a",
+            boxShadow: "inset 0 2px 10px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.02)",
+            padding: "16px 18px",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderBottom: "1px solid #1a1a1a",
+              paddingBottom: 14,
+              marginBottom: 14,
+            }}>
+              {/* Left: Title */}
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.3em", color: "#ffffff", fontFamily: "Arial", margin: 0 }}>
+                  THE STARTER
+                </p>
+                <p style={{ fontSize: 7, color: "#404040", letterSpacing: "0.25em", margin: "3px 0 0", fontFamily: "Arial" }}>
+                  SYNTHESIZER · MK I
+                </p>
+              </div>
+
+              {/* Center: OLED note display + canvases */}
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{
+                  background: "#000",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: 3,
+                  padding: "5px 12px",
+                }}>
+                  <span style={{
+                    color: "#00d4ff",
+                    fontSize: 16,
+                    fontFamily: "monospace",
+                    letterSpacing: 3,
+                    textShadow: "0 0 8px rgba(0,212,255,0.5)",
+                  }}>
+                    {currentNote ?? "---"}
+                  </span>
+                </div>
+                <WaveformCanvas getWaveform={getWaveform} width={200} height={48} />
+                <SpectrumCanvas
+                  getFFT={getFFT}
+                  filterFreq={filterFreq}
+                  sampleRate={analyserInfo.sampleRate}
+                  fftSize={analyserInfo.fftSize}
+                  width={200}
+                  height={48}
+                />
+              </div>
+
+              {/* Right: Volume knob */}
+              <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={handleVolume} size="sm" />
+            </div>
+
+            {/* Controls grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+              gap: 12,
+              marginBottom: 14,
+            }}>
+              {/* OSC */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>OSC</p>
+                <WaveformSelect
+                  value={waveform}
+                  options={["sine", "square", "sawtooth", "triangle"]}
+                  onChange={handleWaveform}
+                  size="md"
+                  label="Waveform"
+                />
+              </div>
+
+              {/* FILTER */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>FILTER</p>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <Knob
+                    value={filterFreq}
+                    min={80}
+                    max={18000}
+                    step={10}
+                    label="TONE"
+                    unit="Hz"
+                    scale="log"
+                    onChange={handleFilterFreq}
+                    size="lg"
+                  />
+                </div>
+              </div>
+
+              {/* ENV */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>ENV</p>
+                <div style={{ display: "flex", justifyContent: "center", gap: 28 }}>
+                  <Fader
+                    value={attack}
+                    min={0.001}
+                    max={2}
+                    step={0.001}
+                    label="Attack"
+                    unit="s"
+                    size="md"
+                    onChange={handleAttack}
+                  />
+                  <Fader
+                    value={release}
+                    min={0.05}
+                    max={4}
+                    step={0.01}
+                    label="Release"
+                    unit="s"
+                    size="md"
+                    onChange={handleRelease}
+                  />
+                </div>
+              </div>
+
+              {/* FX */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>FX</p>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <button
+                    onClick={handleReverb}
+                    style={{
+                      width: 56,
+                      height: 22,
+                      borderRadius: 3,
+                      border: `1px solid ${reverb ? "#00d4ff" : "#2a2a2a"}`,
+                      background: reverb ? "#001a22" : "#0a0a0a",
+                      boxShadow: reverb ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <span style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.1em" }}>
+                    REVERB
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard section */}
+            <div style={{
+              background: "#050505",
+              borderRadius: 5,
+              border: "1px solid #111",
+              padding: "10px 8px 8px",
+              boxShadow: "inset 0 2px 6px rgba(0,0,0,0.5)",
+            }}>
+              {/* Octave navigation */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 6,
+                justifyContent: "center",
+              }}>
+                <button
+                  style={{
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setStartOctave((o) => Math.max(1, o - 1))}
+                  disabled={startOctave <= 1}
+                  aria-label="Octave down"
+                >
+                  −
+                </button>
+                <span style={{ color: "#404040", fontSize: 12, minWidth: 74, textAlign: "center" }}>
+                  Oct {startOctave}–{startOctave + 2}
+                </span>
+                <button
+                  style={{
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setStartOctave((o) => Math.min(5, o + 1))}
+                  disabled={startOctave >= 5}
+                  aria-label="Octave up"
+                >
+                  +
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <PianoKeyboard
+                  onNoteOn={noteOn}
+                  onNoteOff={noteOff}
+                  startOctave={startOctave}
+                  octaves={3}
+                  activeNotes={activeNotes}
+                  whiteKeyWidth={28}
+                  whiteKeyHeight={88}
+                />
+              </div>
+
+              {/* Bottom rubber strip */}
+              <div style={{
+                height: 6,
+                background: "linear-gradient(90deg, #080808, #111 20%, #111 80%, #080808)",
+                borderTop: "1px solid #080808",
+                marginTop: 4,
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
