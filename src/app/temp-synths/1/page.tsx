@@ -192,15 +192,14 @@ export default function Synth1Page() {
       }}
     >
       <div style={isMobile ? { flex: 1, minWidth: 0 } : undefined}>
-        <p
-          style={{
-            fontSize: isMobile ? 13 : 22,
-            fontWeight: 700,
-            margin: 0,
-          }}
-        >
-          The Starter
-        </p>
+        {isMobile ? (
+          <p style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>The Starter</p>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <p style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>The Starter</p>
+            <Knob value={volume} min={0} max={1} step={0.01} label="Vol" onChange={handleVolume} size="sm" />
+          </div>
+        )}
         <p
           style={{
             fontSize: isMobile ? 9 : 13,
@@ -221,17 +220,11 @@ export default function Synth1Page() {
           width={vizW}
           height={vizH}
         />
-        <div style={{ marginLeft: 4 }}>
-          <Knob
-            value={volume}
-            min={0}
-            max={1}
-            step={0.01}
-            label="Vol"
-            onChange={handleVolume}
-            size="sm"
-          />
-        </div>
+        {isMobile && (
+          <div style={{ marginLeft: 4 }}>
+            <Knob value={volume} min={0} max={1} step={0.01} label="Vol" onChange={handleVolume} size="sm" />
+          </div>
+        )}
       </div>
     </div>
   );
