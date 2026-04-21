@@ -118,12 +118,12 @@ export class Synth1Engine {
   }
 
   getWaveform(): Float32Array {
-    this.analyser.getFloatTimeDomainData(this.buf);
+    this.analyser.getFloatTimeDomainData(this.buf as any);
     return this.buf;
   }
 
   getFFT(): Float32Array {
-    this.analyser.getFloatFrequencyData(this.fftBuf);
+    this.analyser.getFloatFrequencyData(this.fftBuf as any);
     return this.fftBuf;
   }
 

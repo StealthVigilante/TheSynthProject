@@ -175,7 +175,7 @@ export class Synth2Engine {
   }
 
   getWaveform(): Float32Array {
-    this.analyser.getFloatTimeDomainData(this.buf);
+    this.analyser.getFloatTimeDomainData(this.buf as any);
     return this.buf;
   }
 
