@@ -20,7 +20,7 @@ interface KnobProps {
 const SIZES = {
   sm: { outer: 48, stroke: 3, fontSize: "text-[10px]", labelSize: "text-[9px]" },
   md: { outer: 64, stroke: 4, fontSize: "text-xs", labelSize: "text-[10px]" },
-  lg: { outer: 80, stroke: 5, fontSize: "text-sm", labelSize: "text-xs" },
+  lg: { outer: 80, stroke: 5, fontSize: "text-sm", labelSize: "text-[14px]" },
 };
 
 const START_ANGLE = 225;

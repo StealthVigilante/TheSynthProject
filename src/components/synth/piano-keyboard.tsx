@@ -141,7 +141,7 @@ export function PianoKeyboard({
                 handleNoteEnd(key.note);
               }}
             >
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-muted-foreground/50">
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground/50">
                 {qwertyLabel && (
                   <span className="block text-muted-foreground/70 font-mono">{qwertyLabel}</span>
                 )}
@@ -198,7 +198,7 @@ export function PianoKeyboard({
             }}
           >
             {qwertyLabel && (
-              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] font-mono text-background/50">
+              <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono text-background/50">
                 {qwertyLabel}
               </span>
             )}

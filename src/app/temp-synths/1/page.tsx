@@ -29,7 +29,7 @@ const SECTION: React.CSSProperties = {
 };
 
 const LABEL: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 15,
   fontWeight: 700,
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
