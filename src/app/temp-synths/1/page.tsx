@@ -73,6 +73,7 @@ export default function Synth1Page() {
   const [attack, setAttackState] = useState(0.02);
   const [release, setReleaseState] = useState(0.5);
   const [reverb, setReverbState] = useState(false);
+  const [volume, setVolumeState] = useState(0.8);
   const [startOctave, setStartOctave] = useState(3);
   const startOctaveRef = useRef(startOctave);
   useEffect(() => { startOctaveRef.current = startOctave; }, [startOctave]);
@@ -130,6 +131,11 @@ export default function Synth1Page() {
       engineRef.current?.setReverb(next);
       return next;
     });
+  }, []);
+
+  const handleVolume = useCallback((v: number) => {
+    setVolumeState(v);
+    engineRef.current?.setVolume(v);
   }, []);
 
   useEffect(() => {
@@ -205,7 +211,7 @@ export default function Synth1Page() {
           Oscillator · Filter · Envelope · Reverb
         </p>
       </div>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <WaveformCanvas getWaveform={getWaveform} width={vizW} height={vizH} />
         <SpectrumCanvas
           getFFT={getFFT}
@@ -215,6 +221,17 @@ export default function Synth1Page() {
           width={vizW}
           height={vizH}
         />
+        <div style={{ marginLeft: 4 }}>
+          <Knob
+            value={volume}
+            min={0}
+            max={1}
+            step={0.01}
+            label="Vol"
+            onChange={handleVolume}
+            size="sm"
+          />
+        </div>
       </div>
     </div>
   );
