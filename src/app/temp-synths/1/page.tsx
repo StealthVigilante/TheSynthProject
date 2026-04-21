@@ -37,6 +37,32 @@ const LABEL: React.CSSProperties = {
   marginBottom: 10,
 };
 
+const TAB_BAR_STYLE: React.CSSProperties = {
+  display: "flex",
+  borderBottom: "1px solid var(--border)",
+  flexShrink: 0,
+};
+
+const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  padding: "8px 4px",
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  background: "none",
+  border: "none",
+  borderBottom: active ? "2px solid var(--primary)" : "2px solid transparent",
+  color: active ? "var(--foreground)" : "var(--muted-foreground)",
+  cursor: "pointer",
+});
+
+const TABS = [
+  { id: "osc" as const, label: "OSC" },
+  { id: "filter" as const, label: "FILTER" },
+  { id: "env" as const, label: "ENV" },
+  { id: "fx" as const, label: "FX" },
+];
+
 export default function Synth1Page() {
   const engineRef = useRef<Synth1Engine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
@@ -264,32 +290,6 @@ export default function Synth1Page() {
       </div>
     </div>
   );
-
-  const TAB_BAR_STYLE: React.CSSProperties = {
-    display: "flex",
-    borderBottom: "1px solid var(--border)",
-    flexShrink: 0,
-  };
-
-  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
-    flex: 1,
-    padding: "8px 4px",
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.08em",
-    background: "none",
-    border: "none",
-    borderBottom: active ? "2px solid var(--primary)" : "2px solid transparent",
-    color: active ? "var(--foreground)" : "var(--muted-foreground)",
-    cursor: "pointer",
-  });
-
-  const TABS = [
-    { id: "osc" as const, label: "OSC" },
-    { id: "filter" as const, label: "FILTER" },
-    { id: "env" as const, label: "ENV" },
-    { id: "fx" as const, label: "FX" },
-  ];
 
   const mobileControls = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
