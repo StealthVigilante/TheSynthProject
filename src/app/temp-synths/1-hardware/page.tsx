@@ -32,7 +32,7 @@ export default function Synth1HardwarePage() {
   const engineRef = useRef<Synth1Engine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
 
-  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 1024 });
+  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 2048 });
   const [waveform, setWaveformState] = useState<string>("sine");
   const [filterFreq, setFilterFreqState] = useState(4000);
   const [attack, setAttackState] = useState(0.02);
@@ -337,6 +337,7 @@ export default function Synth1HardwarePage() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <button
                     onClick={handleReverb}
+                    aria-label={reverb ? "Reverb on" : "Reverb off"}
                     style={{
                       width: 56,
                       height: 22,
