@@ -236,6 +236,7 @@ export default function Synth1Page() {
             step={10}
             label="Tone"
             unit="Hz"
+            scale="log"
             onChange={handleFilterFreq}
             size={isMobile ? "sm" : "md"}
           />

@@ -12,6 +12,7 @@ interface KnobProps {
   unit?: string;
   onChange: (value: number) => void;
   size?: "sm" | "md" | "lg";
+  scale?: "linear" | "log";
   disabled?: boolean;
   locked?: boolean;
 }
@@ -35,6 +36,7 @@ export function Knob({
   unit,
   onChange,
   size = "md",
+  scale = "linear",
   disabled = false,
   locked = false,
 }: KnobProps) {
@@ -44,7 +46,9 @@ export function Knob({
   const dragRef = useRef<{ startY: number; startValue: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const normalizedValue = scale === "log"
+    ? Math.log(value / min) / Math.log(max / min)
+    : Math.max(0, Math.min(1, (value - min) / (max - min)));
   const angle = START_ANGLE - normalizedValue * SWEEP;
 
   // Format display value
@@ -68,19 +72,21 @@ export function Knob({
     (e: React.PointerEvent) => {
       if (!dragRef.current || disabled || locked) return;
       const deltaY = dragRef.current.startY - e.clientY;
-      const range = max - min;
-      // 200px of drag = full range
       const sensitivity = e.shiftKey ? 800 : 200;
-      const delta = (deltaY / sensitivity) * range;
-      const newValue = Math.max(
-        min,
-        Math.min(max, dragRef.current.startValue + delta)
-      );
-      // Snap to step
+      let newValue: number;
+      if (scale === "log") {
+        const startNorm = Math.log(dragRef.current.startValue / min) / Math.log(max / min);
+        const newNorm = Math.max(0, Math.min(1, startNorm + deltaY / sensitivity));
+        newValue = min * Math.pow(max / min, newNorm);
+      } else {
+        const range = max - min;
+        const delta = (deltaY / sensitivity) * range;
+        newValue = Math.max(min, Math.min(max, dragRef.current.startValue + delta));
+      }
       const snapped = Math.round(newValue / step) * step;
-      onChange(snapped);
+      onChange(Math.max(min, Math.min(max, snapped)));
     },
-    [min, max, step, onChange, disabled, locked]
+    [min, max, step, scale, onChange, disabled, locked]
   );
 
   const handlePointerUp = useCallback(() => {
@@ -90,10 +96,9 @@ export function Knob({
 
   const handleDoubleClick = useCallback(() => {
     if (disabled || locked) return;
-    // Reset to center or default
-    const midValue = min + (max - min) / 2;
+    const midValue = scale === "log" ? Math.sqrt(min * max) : min + (max - min) / 2;
     onChange(Math.round(midValue / step) * step);
-  }, [min, max, step, onChange, disabled, locked]);
+  }, [min, max, step, scale, onChange, disabled, locked]);
 
   // SVG arc path
   const polarToCartesian = (a: number) => {

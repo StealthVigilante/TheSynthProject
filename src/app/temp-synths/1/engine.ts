@@ -9,6 +9,7 @@ export class Synth1Engine {
   private reverbWet: GainNode;
   private reverb: { input: GainNode; output: GainNode };
   private analyser: AnalyserNode;
+  private compressor: DynamicsCompressorNode;
   private buf: Float32Array;
   private fftBuf: Float32Array;
 
@@ -37,9 +38,16 @@ export class Synth1Engine {
     this.reverb = buildReverb(this.ctx);
 
     this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 1024;
+    this.analyser.fftSize = 2048;
     this.buf = new Float32Array(this.analyser.fftSize);
     this.fftBuf = new Float32Array(this.analyser.frequencyBinCount);
+
+    this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.value = -18;
+    this.compressor.knee.value = 12;
+    this.compressor.ratio.value = 12;
+    this.compressor.attack.value = 0.003;
+    this.compressor.release.value = 0.25;
 
     // Wire up
     this.envGain.connect(this.filter);
@@ -48,7 +56,8 @@ export class Synth1Engine {
     this.dryGain.connect(this.analyser);
     this.reverbWet.connect(this.reverb.input);
     this.reverb.output.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
+    this.analyser.connect(this.compressor);
+    this.compressor.connect(this.ctx.destination);
   }
 
   noteOn(note: string, velocity = 0.8): void {
@@ -127,5 +136,6 @@ export class Synth1Engine {
     this.reverb.input.disconnect();
     this.reverb.output.disconnect();
     this.analyser.disconnect();
+    this.compressor.disconnect();
   }
 }
