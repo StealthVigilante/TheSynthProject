@@ -11,6 +11,10 @@ interface PianoKeyboardProps {
   activeNotes?: Set<string>;
   /** QWERTY key labels to show on keys */
   keyLabels?: Record<string, string>;
+  /** Explicit pixel width per white key. Omit to use flex-1 (fill container). */
+  whiteKeyWidth?: number;
+  /** Explicit pixel height for keys. Omit to use Tailwind h-32 sm:h-40. */
+  whiteKeyHeight?: number;
 }
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -29,6 +33,8 @@ export function PianoKeyboard({
   startOctave = 3,
   octaves = 3,
   activeNotes = new Set(),
+  whiteKeyWidth: whiteKeyWidthPx,
+  whiteKeyHeight,
 }: PianoKeyboardProps) {
   const [mouseActive, setMouseActive] = useState(false);
   const activeRef = useRef(new Set<string>());
@@ -91,7 +97,7 @@ export function PianoKeyboard({
     return whiteIndex;
   };
 
-  const whiteKeyWidth = 100 / whiteKeys.length;
+  const whiteKeyWidthPct = 100 / whiteKeys.length;
 
   return (
     <div
@@ -100,7 +106,10 @@ export function PianoKeyboard({
       onMouseLeave={handleMouseUp}
     >
       {/* White keys */}
-      <div className="flex h-32 sm:h-40">
+      <div
+        className={cn("flex", !whiteKeyHeight && "h-32 sm:h-40")}
+        style={whiteKeyHeight ? { height: whiteKeyHeight } : undefined}
+      >
         {whiteKeys.map((key) => {
           const isActive = activeNotes.has(key.note);
           const qwertyLabel = QWERTY_LABELS[key.note];
@@ -108,11 +117,13 @@ export function PianoKeyboard({
             <button
               key={key.note}
               className={cn(
-                "relative flex-1 border border-border/50 rounded-b-md transition-colors",
+                "relative border border-border/50 rounded-b-md transition-colors",
+                whiteKeyWidthPx ? "" : "flex-1",
                 isActive
                   ? "bg-primary/30"
                   : "bg-card hover:bg-muted"
               )}
+              style={whiteKeyWidthPx ? { width: whiteKeyWidthPx, flexShrink: 0 } : undefined}
               onMouseDown={() => {
                 setMouseActive(true);
                 handleNoteStart(key.note);
@@ -147,7 +158,17 @@ export function PianoKeyboard({
         if (offset === null) return null;
         const isActive = activeNotes.has(key.note);
         const qwertyLabel = QWERTY_LABELS[key.note];
-        const leftPercent = (offset + 0.65) * whiteKeyWidth;
+        const blackKeyStyle = whiteKeyWidthPx
+          ? {
+              left: `${(offset + 0.65) * whiteKeyWidthPx}px`,
+              width: `${whiteKeyWidthPx * 0.65}px`,
+              height: "55%",
+            }
+          : {
+              left: `${(offset + 0.65) * whiteKeyWidthPct}%`,
+              width: `${whiteKeyWidthPct * 0.65}%`,
+              height: "55%",
+            };
 
         return (
           <button
@@ -158,11 +179,7 @@ export function PianoKeyboard({
                 ? "bg-primary"
                 : "bg-foreground hover:bg-foreground/80"
             )}
-            style={{
-              left: `${leftPercent}%`,
-              width: `${whiteKeyWidth * 0.65}%`,
-              height: "55%",
-            }}
+            style={blackKeyStyle}
             onMouseDown={() => {
               setMouseActive(true);
               handleNoteStart(key.note);
