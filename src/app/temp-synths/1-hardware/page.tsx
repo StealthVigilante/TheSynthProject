@@ -145,6 +145,159 @@ export default function Synth1HardwarePage() {
     };
   }, [isMobile, noteOn, noteOff]);
 
+  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: "8px 4px",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    background: "none",
+    border: "none",
+    borderBottom: active ? "2px solid #00d4ff" : "2px solid transparent",
+    color: active ? "#ffffff" : "#404040",
+    cursor: "pointer",
+  });
+
+  const mobilePanelStyle: React.CSSProperties = {
+    background: "#0a0a0a",
+    border: "1px solid #1e1e1e",
+    borderRadius: 5,
+    padding: "14px 12px",
+  };
+
+  const mobileHeader = (
+    <div style={{
+      padding: "8px 12px",
+      borderBottom: "1px solid #1e1e1e",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#ffffff", fontFamily: "Arial" }}>
+          The Starter
+        </p>
+        <p style={{ fontSize: 9, color: "#404040", margin: "1px 0 0" }}>
+          Hardware Edition
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
+        <SpectrumCanvas
+          getFFT={getFFT}
+          filterFreq={filterFreq}
+          sampleRate={analyserInfo.sampleRate}
+          fftSize={analyserInfo.fftSize}
+          width={100}
+          height={36}
+        />
+        <div style={{ marginLeft: 4 }}>
+          <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={handleVolume} size="sm" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const mobileControls = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1e1e1e", flexShrink: 0 }}>
+        {TABS.map((tab) => (
+          <button key={tab.id} style={tabBtnStyle(activeTab === tab.id)} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
+        {activeTab === "osc" && (
+          <div style={mobilePanelStyle}>
+            <WaveformSelect
+              value={waveform}
+              options={["sine", "square", "sawtooth", "triangle"]}
+              onChange={handleWaveform}
+              label="Waveform"
+            />
+          </div>
+        )}
+        {activeTab === "filter" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob
+                value={filterFreq}
+                min={80}
+                max={18000}
+                step={10}
+                label="TONE"
+                unit="Hz"
+                scale="log"
+                onChange={handleFilterFreq}
+                size="sm"
+              />
+            </div>
+          </div>
+        )}
+        {activeTab === "env" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+              <Fader value={attack} min={0.001} max={2} step={0.001} label="ATK" unit="s" onChange={handleAttack} />
+              <Fader value={release} min={0.05} max={4} step={0.01} label="REL" unit="s" onChange={handleRelease} />
+            </div>
+          </div>
+        )}
+        {activeTab === "fx" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button
+                onClick={handleReverb}
+                aria-label={reverb ? "Reverb on" : "Reverb off"}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 3,
+                  border: `1px solid ${reverb ? "#00d4ff" : "#2a2a2a"}`,
+                  background: reverb ? "#001a22" : "#0a0a0a",
+                  color: reverb ? "#00d4ff" : "#404040",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  boxShadow: reverb ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
+                }}
+              >
+                REVERB
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const mobileKeyboard = (
+    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <PianoKeyboard
+        onNoteOn={noteOn}
+        onNoteOff={noteOff}
+        startOctave={startOctave}
+        octaves={2}
+        activeNotes={activeNotes}
+        whiteKeyWidth={mobileKeyWidth}
+        whiteKeyHeight={80}
+      />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <SynthShell
+        isMobile={true}
+        theme={MOBILE_THEME}
+        header={mobileHeader}
+        controls={mobileControls}
+        keyboard={mobileKeyboard}
+        navHeight={48}
+      />
+    );
+  }
+
   const sectionLabel: React.CSSProperties = {
     fontSize: 9,
     fontWeight: 700,
