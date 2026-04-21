@@ -8,7 +8,7 @@ export function useBreakpoint() {
 
   useEffect(() => {
     function update() {
-      const mobile = window.innerWidth < 768;
+      const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       setMobileKeyWidth(mobile ? Math.floor((window.innerHeight - 16) / 14) : 40);
     }

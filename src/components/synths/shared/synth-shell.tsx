@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface SynthShellProps {
   isMobile: boolean;
@@ -8,9 +9,11 @@ interface SynthShellProps {
   header: ReactNode;
   controls: ReactNode;
   keyboard: ReactNode;
+  navHeight?: number;
+  desktopClassName?: string;
 }
 
-export function SynthShell({ isMobile, theme, header, controls, keyboard }: SynthShellProps) {
+export function SynthShell({ isMobile, theme, header, controls, keyboard, navHeight = 0, desktopClassName }: SynthShellProps) {
   if (isMobile) {
     return (
       <div
@@ -50,14 +53,17 @@ export function SynthShell({ isMobile, theme, header, controls, keyboard }: Synt
     );
   }
 
+  const desktopMinH = navHeight > 0 ? `calc(100dvh - ${navHeight}px)` : "100dvh";
+  const desktopMaxH = navHeight > 0 ? `calc(100dvh - 4rem - ${navHeight}px)` : "calc(100dvh - 4rem)";
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center py-8"
-      style={{ background: theme.bg }}
+      className="flex items-center justify-center py-8"
+      style={{ background: theme.bg, minHeight: desktopMinH }}
     >
       <div
-        className="w-[480px] lg:w-[520px] flex flex-col max-h-[calc(100vh-4rem)] rounded-xl overflow-hidden border shadow-2xl"
-        style={{ background: theme.panel, borderColor: theme.border }}
+        className={cn("flex flex-col rounded-xl overflow-hidden border shadow-2xl", desktopClassName ?? "w-[480px] lg:w-[520px]")}
+        style={{ background: theme.panel, borderColor: theme.border, maxHeight: desktopMaxH }}
       >
         <div className="flex-shrink-0">{header}</div>
         <div className="flex-1 min-h-0 overflow-y-auto">{controls}</div>

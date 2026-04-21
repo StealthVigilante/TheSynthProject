@@ -402,7 +402,7 @@ export default function Synth1Page() {
   };
 
   const keyboard = (
-    <div style={{ padding: "8px 12px" }}>
+    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", alignItems: "center" }}>
       {!isMobile && (
         <div
           style={{
@@ -421,13 +421,13 @@ export default function Synth1Page() {
           >
             −
           </button>
-          <span style={{ fontSize: 11, color: "var(--muted-foreground)", minWidth: 52, textAlign: "center" }}>
-            Oct {startOctave}–{startOctave + 1}
+          <span style={{ fontSize: 11, color: "var(--muted-foreground)", minWidth: 60, textAlign: "center" }}>
+            Oct {startOctave}–{startOctave + 2}
           </span>
           <button
             style={octaveNavStyle}
-            onClick={() => setStartOctave((o) => Math.min(6, o + 1))}
-            disabled={startOctave >= 6}
+            onClick={() => setStartOctave((o) => Math.min(5, o + 1))}
+            disabled={startOctave >= 5}
             aria-label="Octave up"
           >
             +
@@ -438,7 +438,7 @@ export default function Synth1Page() {
         onNoteOn={noteOn}
         onNoteOff={noteOff}
         startOctave={startOctave}
-        octaves={2}
+        octaves={isMobile ? 2 : 3}
         activeNotes={activeNotes}
         whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
         whiteKeyHeight={isMobile ? 80 : 72}
@@ -454,6 +454,7 @@ export default function Synth1Page() {
       controls={isMobile ? mobileControls : desktopControls}
       keyboard={keyboard}
       navHeight={48}
+      desktopClassName="w-[600px] lg:w-[660px]"
     />
   );
 }
