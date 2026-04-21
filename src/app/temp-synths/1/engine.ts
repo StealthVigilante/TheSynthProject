@@ -102,6 +102,20 @@ export class Synth1Engine {
     return this.buf;
   }
 
+  getFFT(): Float32Array {
+    const buf = new Float32Array(this.analyser.frequencyBinCount);
+    this.analyser.getFloatFrequencyData(buf);
+    return buf;
+  }
+
+  get sampleRate(): number {
+    return this.ctx.sampleRate;
+  }
+
+  get fftSize(): number {
+    return this.analyser.fftSize;
+  }
+
   dispose(): void {
     this.osc?.stop();
     this.osc?.disconnect();
