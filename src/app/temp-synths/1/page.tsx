@@ -313,7 +313,6 @@ export default function Synth1Page() {
       <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
         {activeTab === "osc" && (
           <div style={SECTION}>
-            <p style={LABEL}>Oscillator</p>
             <WaveformSelect
               value={waveform}
               options={["sine", "square", "sawtooth", "triangle"]}
@@ -324,7 +323,6 @@ export default function Synth1Page() {
         )}
         {activeTab === "filter" && (
           <div style={SECTION}>
-            <p style={LABEL}>Filter</p>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <Knob
                 value={filterFreq}
@@ -333,6 +331,7 @@ export default function Synth1Page() {
                 step={10}
                 label="Tone"
                 unit="Hz"
+                scale="log"
                 onChange={handleFilterFreq}
                 size="sm"
               />
@@ -341,7 +340,6 @@ export default function Synth1Page() {
         )}
         {activeTab === "env" && (
           <div style={SECTION}>
-            <p style={LABEL}>Envelope</p>
             <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
               <Fader
                 value={attack}
@@ -366,7 +364,6 @@ export default function Synth1Page() {
         )}
         {activeTab === "fx" && (
           <div style={SECTION}>
-            <p style={LABEL}>FX</p>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <button
                 onClick={handleReverb}
