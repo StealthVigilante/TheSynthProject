@@ -24,17 +24,17 @@ const KEY_NOTE_MAP: Record<string, [string, number]> = {
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
-  borderRadius: 12,
-  padding: "12px 16px",
+  borderRadius: 14,
+  padding: "16px 20px",
 };
 
 const LABEL: React.CSSProperties = {
-  fontSize: 10,
+  fontSize: 13,
   fontWeight: 700,
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 10,
+  marginBottom: 14,
 };
 
 const TAB_BAR_STYLE: React.CSSProperties = {
@@ -172,13 +172,13 @@ export default function Synth1Page() {
     };
   }, [isMobile, noteOn, noteOff]);
 
-  const vizW = isMobile ? 100 : 220;
-  const vizH = isMobile ? 36 : 60;
+  const vizW = isMobile ? 100 : 280;
+  const vizH = isMobile ? 36 : 76;
 
   const header = (
     <div
       style={{
-        padding: isMobile ? "8px 12px" : "12px 16px",
+        padding: isMobile ? "8px 12px" : "16px 20px",
         borderBottom: "1px solid var(--border)",
         display: isMobile ? "flex" : undefined,
         alignItems: isMobile ? "center" : undefined,
@@ -188,7 +188,7 @@ export default function Synth1Page() {
       <div style={isMobile ? { flex: 1, minWidth: 0 } : undefined}>
         <p
           style={{
-            fontSize: isMobile ? 13 : 16,
+            fontSize: isMobile ? 13 : 22,
             fontWeight: 700,
             margin: 0,
           }}
@@ -197,9 +197,9 @@ export default function Synth1Page() {
         </p>
         <p
           style={{
-            fontSize: isMobile ? 9 : 11,
+            fontSize: isMobile ? 9 : 13,
             color: "var(--muted-foreground)",
-            margin: isMobile ? "1px 0 0" : "2px 0 8px",
+            margin: isMobile ? "1px 0 0" : "3px 0 10px",
           }}
         >
           Oscillator · Filter · Envelope · Reverb
@@ -220,7 +220,7 @@ export default function Synth1Page() {
   );
 
   const desktopControls = (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, padding: 16 }}>
       <div style={SECTION}>
         <p style={LABEL}>Oscillator</p>
         <WaveformSelect
@@ -243,14 +243,14 @@ export default function Synth1Page() {
             unit="Hz"
             scale="log"
             onChange={handleFilterFreq}
-            size={isMobile ? "sm" : "md"}
+            size={isMobile ? "sm" : "lg"}
           />
         </div>
       </div>
 
       <div style={SECTION}>
         <p style={LABEL}>Envelope</p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 32 }}>
           <Fader
             value={attack}
             min={0.001}
@@ -278,13 +278,13 @@ export default function Synth1Page() {
           <button
             onClick={handleReverb}
             style={{
-              padding: "8px 20px",
-              borderRadius: 8,
+              padding: "10px 28px",
+              borderRadius: 10,
               border: "1px solid",
               borderColor: reverb ? "var(--primary)" : "var(--border)",
               background: reverb ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
               color: reverb ? "var(--foreground)" : "var(--muted-foreground)",
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: reverb ? 600 : 400,
               cursor: "pointer",
               transition: "all 150ms",
@@ -392,13 +392,13 @@ export default function Synth1Page() {
   const octaveNavStyle: React.CSSProperties = {
     background: "none",
     border: "1px solid var(--border)",
-    borderRadius: 6,
+    borderRadius: 7,
     color: "var(--foreground)",
     cursor: "pointer",
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 600,
     lineHeight: 1,
-    padding: "2px 8px",
+    padding: "4px 12px",
   };
 
   const keyboard = (
@@ -421,7 +421,7 @@ export default function Synth1Page() {
           >
             −
           </button>
-          <span style={{ fontSize: 11, color: "var(--muted-foreground)", minWidth: 60, textAlign: "center" }}>
+          <span style={{ fontSize: 14, color: "var(--muted-foreground)", minWidth: 74, textAlign: "center" }}>
             Oct {startOctave}–{startOctave + 2}
           </span>
           <button
@@ -440,8 +440,8 @@ export default function Synth1Page() {
         startOctave={startOctave}
         octaves={isMobile ? 2 : 3}
         activeNotes={activeNotes}
-        whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
-        whiteKeyHeight={isMobile ? 80 : 72}
+        whiteKeyWidth={isMobile ? mobileKeyWidth : 28}
+        whiteKeyHeight={isMobile ? 80 : 92}
       />
     </div>
   );
@@ -454,7 +454,7 @@ export default function Synth1Page() {
       controls={isMobile ? mobileControls : desktopControls}
       keyboard={keyboard}
       navHeight={48}
-      desktopClassName="w-[600px] lg:w-[660px]"
+      desktopClassName="w-[760px] lg:w-[840px]"
     />
   );
 }
