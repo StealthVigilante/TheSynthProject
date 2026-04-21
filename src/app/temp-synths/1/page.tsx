@@ -172,34 +172,39 @@ export default function Synth1Page() {
     };
   }, [isMobile, noteOn, noteOff]);
 
-  const vizW = isMobile ? 152 : 220;
-  const vizH = isMobile ? 44 : 60;
+  const vizW = isMobile ? 100 : 220;
+  const vizH = isMobile ? 36 : 60;
 
   const header = (
     <div
       style={{
         padding: isMobile ? "8px 12px" : "12px 16px",
         borderBottom: "1px solid var(--border)",
+        display: isMobile ? "flex" : undefined,
+        alignItems: isMobile ? "center" : undefined,
+        gap: isMobile ? 8 : undefined,
       }}
     >
-      <p
-        style={{
-          fontSize: isMobile ? 13 : 16,
-          fontWeight: 700,
-          margin: 0,
-        }}
-      >
-        The Starter
-      </p>
-      <p
-        style={{
-          fontSize: isMobile ? 9 : 11,
-          color: "var(--muted-foreground)",
-          margin: isMobile ? "1px 0 6px" : "2px 0 8px",
-        }}
-      >
-        Oscillator · Filter · Envelope · Reverb
-      </p>
+      <div style={isMobile ? { flex: 1, minWidth: 0 } : undefined}>
+        <p
+          style={{
+            fontSize: isMobile ? 13 : 16,
+            fontWeight: 700,
+            margin: 0,
+          }}
+        >
+          The Starter
+        </p>
+        <p
+          style={{
+            fontSize: isMobile ? 9 : 11,
+            color: "var(--muted-foreground)",
+            margin: isMobile ? "1px 0 0" : "2px 0 8px",
+          }}
+        >
+          Oscillator · Filter · Envelope · Reverb
+        </p>
+      </div>
       <div style={{ display: "flex", gap: 6 }}>
         <WaveformCanvas getWaveform={getWaveform} width={vizW} height={vizH} />
         <SpectrumCanvas
@@ -408,7 +413,7 @@ export default function Synth1Page() {
             alignItems: "center",
             gap: 8,
             marginBottom: 6,
-            justifyContent: "flex-end",
+            justifyContent: "center",
           }}
         >
           <button
