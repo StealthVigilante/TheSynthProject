@@ -160,7 +160,7 @@ export function OsciSub() {
         onNoteOn={noteOn} onNoteOff={noteOff}
         startOctave={2} octaves={isMobile ? 2 : 3}
         whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
-        whiteKeyHeight={isMobile ? 80 : 80}
+        whiteKeyHeight={isMobile ? 80 : 72}
         whiteColor="#e8e8ee" blackColor={T.surface}
         activeColor={T.accent} borderColor={T.border} showKeyLabels
       />

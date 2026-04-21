@@ -105,7 +105,7 @@ export function OsciFM() {
   );
 
   const controls = (
-    <div className={`flex gap-3 ${isMobile ? "p-3" : "p-4"}`} style={{ minHeight: 0 }}>
+    <div className={`flex gap-3 ${isMobile ? "p-3" : "p-4"}`}>
       <OperatorBlock label="Carrier" badge="C" color={T.accent}>
         <WaveSelector value={carrierWave} onChange={(v) => setParam("oscillator.type", v)} color={T.accent} />
         <p className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: T.dim }}>Envelope</p>
