@@ -6,13 +6,17 @@ import { Fader } from "@/components/synth/fader";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformSelect } from "@/components/synth/waveform-select";
 import { WaveformCanvas } from "../waveform-canvas";
+import { SynthShell } from "@/components/synths/shared/synth-shell";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { Synth2Engine } from "./engine";
+
+const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
   borderRadius: 12,
-  padding: "16px 20px",
+  padding: "12px 16px",
 };
 
 const LABEL: React.CSSProperties = {
@@ -21,19 +25,19 @@ const LABEL: React.CSSProperties = {
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 12,
+  marginBottom: 10,
 };
 
 function EnvelopeCurve({ attack, release, sustainOn }: { attack: number; release: number; sustainOn: boolean }) {
-  const W = 260;
-  const H = 60;
+  const W = 200;
+  const H = 50;
   const maxT = 3;
 
   const aX = (Math.min(attack, maxT) / maxT) * (W * 0.3);
   const sX = W * 0.55;
   const rEnd = W * 0.85 + (Math.min(release, maxT) / maxT) * (W * 0.15);
-  const top = 8;
-  const bot = H - 8;
+  const top = 6;
+  const bot = H - 6;
   const mid = sustainOn ? top + (bot - top) * 0.3 : bot;
 
   const d = `M 0 ${bot} L ${aX} ${top} L ${sX} ${mid} L ${rEnd} ${bot}`;
@@ -50,6 +54,7 @@ function EnvelopeCurve({ attack, release, sustainOn }: { attack: number; release
 
 export default function Synth2Page() {
   const engineRef = useRef<Synth2Engine | null>(null);
+  const { isMobile, mobileKeyWidth } = useBreakpoint();
 
   const [waveform, setWaveformState] = useState<string>("sawtooth");
   const [subEnabled, setSubState] = useState(false);
@@ -125,7 +130,7 @@ export default function Synth2Page() {
   }, []);
 
   const toggleStyle = (on: boolean): React.CSSProperties => ({
-    padding: "6px 14px",
+    padding: "6px 12px",
     borderRadius: 8,
     border: "1px solid",
     borderColor: on ? "var(--primary)" : "var(--border)",
@@ -137,75 +142,83 @@ export default function Synth2Page() {
     transition: "all 150ms",
   });
 
-  return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>The Learner</p>
-        <p style={{ fontSize: 13, color: "var(--muted-foreground)", margin: "4px 0 0" }}>
-          Osc + Sub · Filter · ADSR · Reverb + Delay
-        </p>
-      </div>
+  const header = (
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+      <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>The Learner</p>
+      <p style={{ fontSize: 11, color: "var(--muted-foreground)", margin: "2px 0 8px" }}>
+        Osc + Sub · Filter · ADSR · Reverb + Delay
+      </p>
+      <WaveformCanvas getWaveform={getWaveform} width={480} height={60} />
+    </div>
+  );
 
-      {/* Waveform display */}
-      <div style={{ ...SECTION, display: "flex", justifyContent: "center" }}>
-        <WaveformCanvas getWaveform={getWaveform} width={560} height={80} />
-      </div>
-
-      {/* Oscillator */}
+  const controls = (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: 12 }}>
       <div style={SECTION}>
         <p style={LABEL}>Oscillator</p>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
-          <WaveformSelect value={waveform} options={["sine", "square", "sawtooth", "triangle"]} onChange={handleWaveform} label="Waveform" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 10, color: "var(--muted-foreground)", textAlign: "center" }}>Sub Osc</span>
-            <button onClick={handleSub} style={toggleStyle(subEnabled)}>
-              Sub {subEnabled ? "ON" : "OFF"}
-            </button>
-          </div>
+        <WaveformSelect value={waveform} options={["sine", "square", "sawtooth", "triangle"]} onChange={handleWaveform} label="Waveform" />
+        <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+          <button onClick={handleSub} style={toggleStyle(subEnabled)}>
+            Sub {subEnabled ? "ON" : "OFF"}
+          </button>
         </div>
       </div>
 
-      {/* Filter */}
       <div style={SECTION}>
         <p style={LABEL}>Filter</p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 32 }}>
-          <Knob value={cutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={handleCutoff} size="md" />
-          <Knob value={resonance} min={0.1} max={20} step={0.1} label="Resonance" unit="Q" onChange={handleRes} size="md" />
+        <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+          <Knob value={cutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={handleCutoff} size="sm" />
+          <Knob value={resonance} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={handleRes} size="sm" />
         </div>
       </div>
 
-      {/* Envelope */}
       <div style={SECTION}>
         <p style={LABEL}>Envelope</p>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
-          <div style={{ display: "flex", gap: 24 }}>
-            <Fader value={attack} min={0.001} max={2} step={0.001} label="Attack" unit="s" onChange={handleAttack} />
-            <Fader value={release} min={0.05} max={4} step={0.01} label="Release" unit="s" onChange={handleRelease} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 16 }}>
-            <button onClick={handleSustain} style={toggleStyle(sustainOn)}>
-              Sustain {sustainOn ? "ON" : "OFF"}
-            </button>
-            <EnvelopeCurve attack={attack} release={release} sustainOn={sustainOn} />
-          </div>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          <Fader value={attack} min={0.001} max={2} step={0.001} label="Attack" unit="s" onChange={handleAttack} />
+          <Fader value={release} min={0.05} max={4} step={0.01} label="Release" unit="s" onChange={handleRelease} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 8, gap: 12 }}>
+          <button onClick={handleSustain} style={toggleStyle(sustainOn)}>
+            Sustain {sustainOn ? "ON" : "OFF"}
+          </button>
+          <EnvelopeCurve attack={attack} release={release} sustainOn={sustainOn} />
         </div>
       </div>
 
-      {/* FX */}
       <div style={SECTION}>
         <p style={LABEL}>FX</p>
-        <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
           <button onClick={handleReverb} style={toggleStyle(reverbOn)}>
             Reverb {reverbOn ? "ON" : "OFF"}
           </button>
-          <Knob value={delayAmount} min={0} max={1} step={0.01} label="Delay" onChange={handleDelay} size="md" />
+          <Knob value={delayAmount} min={0} max={1} step={0.01} label="Delay" onChange={handleDelay} size="sm" />
         </div>
       </div>
-
-      {/* Keyboard */}
-      <div style={SECTION}>
-        <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={3} octaves={2} />
-      </div>
     </div>
+  );
+
+  const keyboard = (
+    <div style={{ padding: "8px 12px" }}>
+      <PianoKeyboard
+        onNoteOn={noteOn}
+        onNoteOff={noteOff}
+        startOctave={3}
+        octaves={isMobile ? 2 : 3}
+        whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
+        whiteKeyHeight={isMobile ? 80 : 72}
+      />
+    </div>
+  );
+
+  return (
+    <SynthShell
+      isMobile={isMobile}
+      theme={THEME}
+      header={header}
+      controls={controls}
+      keyboard={keyboard}
+      navHeight={48}
+    />
   );
 }

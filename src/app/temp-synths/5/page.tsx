@@ -4,12 +4,16 @@
 import { useState } from "react";
 import { Knob } from "@/components/synth/knob";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
+import { SynthShell } from "@/components/synths/shared/synth-shell";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
+
+const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
   borderRadius: 12,
-  padding: "16px 20px",
+  padding: "12px 16px",
 };
 
 const LABEL: React.CSSProperties = {
@@ -18,7 +22,7 @@ const LABEL: React.CSSProperties = {
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 12,
+  marginBottom: 10,
 };
 
 const WAVES = ["Sine", "Triangle", "Square", "Saw", "Noise", "PWM", "Wavetable"];
@@ -48,6 +52,8 @@ function ToggleButton({ label, on, onToggle }: { label: string; on: boolean; onT
 }
 
 export default function Synth5Page() {
+  const { isMobile, mobileKeyWidth } = useBreakpoint();
+
   const [wavePos, setWavePos] = useState(0);
   const [selectedWave, setSelectedWave] = useState(0);
 
@@ -81,20 +87,21 @@ export default function Synth5Page() {
     });
   };
 
-  return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>The Lab</p>
-        <p style={{ fontSize: 13, color: "var(--muted-foreground)", margin: "4px 0 0" }}>
-          Wavetable · FM · Mod Matrix · Advanced FX · Unison
-        </p>
-      </div>
+  const header = (
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+      <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>The Lab</p>
+      <p style={{ fontSize: 11, color: "var(--muted-foreground)", margin: "2px 0 0" }}>
+        Wavetable · FM · Mod Matrix · Advanced FX · Unison
+      </p>
+    </div>
+  );
 
-      {/* Wavetable + FM */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+  const controls = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
         <div style={SECTION}>
           <p style={LABEL}>Wavetable</p>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
             {WAVES.map((w, i) => (
               <button
                 key={w}
@@ -115,34 +122,31 @@ export default function Synth5Page() {
               </button>
             ))}
           </div>
-          <div>
-            <p style={{ ...LABEL, marginBottom: 6 }}>Wave Position</p>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={wavePos}
-              onChange={(e) => setWavePos(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "var(--primary)" }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>0</span>
-              <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>{wavePos}%</span>
-              <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>100</span>
-            </div>
+          <p style={{ ...LABEL, marginBottom: 4 }}>Wave Position</p>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={wavePos}
+            onChange={(e) => setWavePos(Number(e.target.value))}
+            style={{ width: "100%", accentColor: "var(--primary)" }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>0</span>
+            <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>{wavePos}%</span>
+            <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>100</span>
           </div>
         </div>
 
         <div style={SECTION}>
-          <p style={LABEL}>FM Synthesis</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
-            <Knob value={fmFreq} min={0.5} max={16} step={0.5} label="Mod Freq" unit="×" onChange={setFmFreq} size="md" />
-            <Knob value={fmIndex} min={0} max={20} step={0.1} label="Mod Index" onChange={setFmIndex} size="md" />
+          <p style={LABEL}>FM</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+            <Knob value={fmFreq} min={0.5} max={16} step={0.5} label="Mod Freq" unit="×" onChange={setFmFreq} size="sm" />
+            <Knob value={fmIndex} min={0} max={20} step={0.1} label="Mod Index" onChange={setFmIndex} size="sm" />
           </div>
         </div>
       </div>
 
-      {/* Modulation Matrix */}
       <div style={SECTION}>
         <p style={LABEL}>Modulation Matrix</p>
         <div style={{ overflowX: "auto" }}>
@@ -190,34 +194,33 @@ export default function Synth5Page() {
         </div>
       </div>
 
-      {/* Advanced FX Rack */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div style={SECTION}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
             <p style={{ ...LABEL, margin: 0 }}>Distortion</p>
             <ToggleButton label={distOn ? "ON" : "OFF"} on={distOn} onToggle={() => setDistOn(!distOn)} />
           </div>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <Knob value={distAmt} min={0} max={100} step={1} label="Amount" unit="%" onChange={setDistAmt} size="md" />
+            <Knob value={distAmt} min={0} max={100} step={1} label="Amount" unit="%" onChange={setDistAmt} size="sm" />
           </div>
         </div>
 
         <div style={SECTION}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
             <p style={{ ...LABEL, margin: 0 }}>Bitcrusher</p>
             <ToggleButton label={bitOn ? "ON" : "OFF"} on={bitOn} onToggle={() => setBitOn(!bitOn)} />
           </div>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <Knob value={bitDepth} min={1} max={16} step={1} label="Bit Depth" unit="bit" onChange={setBitDepth} size="md" />
+            <Knob value={bitDepth} min={1} max={16} step={1} label="Bit Depth" unit="bit" onChange={setBitDepth} size="sm" />
           </div>
         </div>
 
         <div style={SECTION}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
-            <p style={{ ...LABEL, margin: 0 }}>Stereo Delay</p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+            <p style={{ ...LABEL, margin: 0 }}>Delay</p>
             <ToggleButton label={delayOn ? "ON" : "OFF"} on={delayOn} onToggle={() => setDelayOn(!delayOn)} />
           </div>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             <Knob value={delayTime} min={0.01} max={1} step={0.01} label="Time" unit="s" onChange={setDelayTime} size="sm" />
             <Knob value={delayFeedback} min={0} max={0.95} step={0.01} label="FB" onChange={setDelayFeedback} size="sm" />
             <Knob value={delaySpread} min={0} max={1} step={0.01} label="Spread" onChange={setDelaySpread} size="sm" />
@@ -225,32 +228,50 @@ export default function Synth5Page() {
         </div>
       </div>
 
-      {/* Polyphony + Unison */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
         <div style={SECTION}>
           <p style={LABEL}>Polyphony</p>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <Knob value={voices} min={1} max={16} step={1} label="Voices" onChange={setVoices} size="lg" />
+            <Knob value={voices} min={1} max={16} step={1} label="Voices" onChange={setVoices} size="md" />
           </div>
         </div>
 
         <div style={SECTION}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
             <p style={{ ...LABEL, margin: 0 }}>Unison</p>
             <ToggleButton label={unisonOn ? "ON" : "OFF"} on={unisonOn} onToggle={() => setUnisonOn(!unisonOn)} />
           </div>
-          <div style={{ display: "flex", gap: 20, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
             <Knob value={unisonCount} min={2} max={8} step={1} label="Voices" onChange={setUnisonCount} size="sm" />
             <Knob value={unisonDetune} min={0} max={100} step={1} label="Detune" unit="¢" onChange={setUnisonDetune} size="sm" />
             <Knob value={unisonSpread} min={0} max={1} step={0.01} label="Spread" onChange={setUnisonSpread} size="sm" />
           </div>
         </div>
       </div>
-
-      {/* Keyboard */}
-      <div style={SECTION}>
-        <PianoKeyboard onNoteOn={() => {}} onNoteOff={() => {}} startOctave={3} octaves={2} />
-      </div>
     </div>
+  );
+
+  const keyboard = (
+    <div style={{ padding: "8px 12px" }}>
+      <PianoKeyboard
+        onNoteOn={() => {}}
+        onNoteOff={() => {}}
+        startOctave={3}
+        octaves={isMobile ? 2 : 3}
+        whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
+        whiteKeyHeight={isMobile ? 80 : 72}
+      />
+    </div>
+  );
+
+  return (
+    <SynthShell
+      isMobile={isMobile}
+      theme={THEME}
+      header={header}
+      controls={controls}
+      keyboard={keyboard}
+      navHeight={48}
+    />
   );
 }

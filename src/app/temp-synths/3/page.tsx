@@ -7,13 +7,17 @@ import { Fader } from "@/components/synth/fader";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformSelect } from "@/components/synth/waveform-select";
 import { WaveformCanvas } from "../waveform-canvas";
+import { SynthShell } from "@/components/synths/shared/synth-shell";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { Synth3Engine } from "./engine";
+
+const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
   borderRadius: 12,
-  padding: "16px 20px",
+  padding: "12px 16px",
 };
 
 const LABEL: React.CSSProperties = {
@@ -22,7 +26,7 @@ const LABEL: React.CSSProperties = {
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 12,
+  marginBottom: 10,
 };
 
 const SUBLABEL: React.CSSProperties = {
@@ -31,7 +35,7 @@ const SUBLABEL: React.CSSProperties = {
   letterSpacing: "0.12em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 8,
+  marginBottom: 6,
 };
 
 function FilterTypeSelect({ value, onChange }: { value: BiquadFilterType; onChange: (v: BiquadFilterType) => void }) {
@@ -65,6 +69,7 @@ function FilterTypeSelect({ value, onChange }: { value: BiquadFilterType; onChan
 
 export default function Synth3Page() {
   const engineRef = useRef<Synth3Engine | null>(null);
+  const { isMobile, mobileKeyWidth } = useBreakpoint();
 
   const [osc1Type, setOsc1Type] = useState<string>("sawtooth");
   const [osc2Type, setOsc2Type] = useState<string>("sawtooth");
@@ -102,49 +107,44 @@ export default function Synth3Page() {
 
   const e = engineRef.current;
 
-  return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
-        <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>The Classic</p>
-        <p style={{ fontSize: 13, color: "var(--muted-foreground)", margin: "4px 0 0" }}>
-          Dual Osc · Filter · Dual ADSR · LFO
-        </p>
-      </div>
+  const header = (
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+      <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>The Classic</p>
+      <p style={{ fontSize: 11, color: "var(--muted-foreground)", margin: "2px 0 8px" }}>
+        Dual Osc · Filter · Dual ADSR · LFO
+      </p>
+      <WaveformCanvas getWaveform={getWaveform} width={480} height={60} />
+    </div>
+  );
 
-      {/* Signal flow: 3 columns */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-        {/* OSC */}
+  const controls = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         <div style={SECTION}>
           <p style={LABEL}>Oscillators</p>
-
           <p style={SUBLABEL}>OSC 1</p>
           <WaveformSelect value={osc1Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc1Type(v); e?.setOsc1Type(v as OscillatorType); }} label="" />
-
-          <div style={{ height: 12 }} />
-
+          <div style={{ height: 10 }} />
           <p style={SUBLABEL}>OSC 2</p>
           <WaveformSelect value={osc2Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc2Type(v); e?.setOsc2Type(v as OscillatorType); }} label="" />
-
-          <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 10 }}>
             <Knob value={osc2Detune} min={-100} max={100} step={1} label="Detune" unit="¢" onChange={(v) => { setOsc2Detune(v); e?.setOsc2Detune(v); }} size="sm" />
             <Knob value={oscMix} min={0} max={1} step={0.01} label="Mix" onChange={(v) => { setOscMix(v); e?.setOscMix(v); }} size="sm" />
           </div>
         </div>
 
-        {/* FILTER */}
         <div style={SECTION}>
           <p style={LABEL}>Filter</p>
           <FilterTypeSelect value={filterType} onChange={(v) => { setFilterTypeState(v); e?.setFilterType(v); }} />
-          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 12 }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
             <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
             <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
           </div>
-
-          <p style={{ ...SUBLABEL, marginTop: 14 }}>Filter Env</p>
+          <p style={{ ...SUBLABEL, marginTop: 12 }}>Filter Env</p>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 6, marginTop: 8, justifyContent: "center" }}>
             <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
             <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
             <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
@@ -152,10 +152,9 @@ export default function Synth3Page() {
           </div>
         </div>
 
-        {/* AMP */}
         <div style={SECTION}>
           <p style={LABEL}>Amp Env</p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
             <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
             <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
             <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
@@ -164,13 +163,12 @@ export default function Synth3Page() {
         </div>
       </div>
 
-      {/* LFO */}
       <div style={SECTION}>
         <p style={LABEL}>LFO</p>
-        <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <WaveformSelect value={lfoType} options={["sine", "square"]} onChange={(v) => { setLfoType(v); e?.setLfoType(v as OscillatorType); }} label="Shape" />
-          <Knob value={lfoRate} min={0.1} max={20} step={0.1} label="Rate" unit="Hz" onChange={(v) => { setLfoRate(v); e?.setLfoRate(v); }} size="md" />
-          <Knob value={lfoDepth} min={0} max={100} step={1} label="Depth" onChange={(v) => { setLfoDepth(v); e?.setLfoDepth(v); }} size="md" />
+          <Knob value={lfoRate} min={0.1} max={20} step={0.1} label="Rate" unit="Hz" onChange={(v) => { setLfoRate(v); e?.setLfoRate(v); }} size="sm" />
+          <Knob value={lfoDepth} min={0} max={100} step={1} label="Depth" onChange={(v) => { setLfoDepth(v); e?.setLfoDepth(v); }} size="sm" />
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>Route</span>
             <div style={{ display: "flex", gap: 4 }}>
@@ -198,16 +196,30 @@ export default function Synth3Page() {
           </div>
         </div>
       </div>
-
-      {/* Waveform display */}
-      <div style={{ ...SECTION, display: "flex", justifyContent: "center" }}>
-        <WaveformCanvas getWaveform={getWaveform} width={680} height={80} />
-      </div>
-
-      {/* Keyboard */}
-      <div style={SECTION}>
-        <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={3} octaves={2} />
-      </div>
     </div>
+  );
+
+  const keyboard = (
+    <div style={{ padding: "8px 12px" }}>
+      <PianoKeyboard
+        onNoteOn={noteOn}
+        onNoteOff={noteOff}
+        startOctave={3}
+        octaves={isMobile ? 2 : 3}
+        whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
+        whiteKeyHeight={isMobile ? 80 : 72}
+      />
+    </div>
+  );
+
+  return (
+    <SynthShell
+      isMobile={isMobile}
+      theme={THEME}
+      header={header}
+      controls={controls}
+      keyboard={keyboard}
+      navHeight={48}
+    />
   );
 }
