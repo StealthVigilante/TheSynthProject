@@ -51,6 +51,7 @@ export default function Synth1Page() {
   const startOctaveRef = useRef(startOctave);
   useEffect(() => { startOctaveRef.current = startOctave; }, [startOctave]);
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"osc" | "filter" | "env" | "fx">("osc");
 
   useEffect(() => {
     engineRef.current = new Synth1Engine();
@@ -187,7 +188,7 @@ export default function Synth1Page() {
     </div>
   );
 
-  const controls = (
+  const desktopControls = (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: 12 }}>
       <div style={SECTION}>
         <p style={LABEL}>Oscillator</p>
@@ -264,6 +265,127 @@ export default function Synth1Page() {
     </div>
   );
 
+  const TAB_BAR_STYLE: React.CSSProperties = {
+    display: "flex",
+    borderBottom: "1px solid var(--border)",
+    flexShrink: 0,
+  };
+
+  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: "8px 4px",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    background: "none",
+    border: "none",
+    borderBottom: active ? "2px solid var(--primary)" : "2px solid transparent",
+    color: active ? "var(--foreground)" : "var(--muted-foreground)",
+    cursor: "pointer",
+  });
+
+  const TABS = [
+    { id: "osc" as const, label: "OSC" },
+    { id: "filter" as const, label: "FILTER" },
+    { id: "env" as const, label: "ENV" },
+    { id: "fx" as const, label: "FX" },
+  ];
+
+  const mobileControls = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={TAB_BAR_STYLE}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            style={tabBtnStyle(activeTab === tab.id)}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
+        {activeTab === "osc" && (
+          <div style={SECTION}>
+            <p style={LABEL}>Oscillator</p>
+            <WaveformSelect
+              value={waveform}
+              options={["sine", "square", "sawtooth", "triangle"]}
+              onChange={handleWaveform}
+              label="Waveform"
+            />
+          </div>
+        )}
+        {activeTab === "filter" && (
+          <div style={SECTION}>
+            <p style={LABEL}>Filter</p>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob
+                value={filterFreq}
+                min={80}
+                max={18000}
+                step={10}
+                label="Tone"
+                unit="Hz"
+                onChange={handleFilterFreq}
+                size="sm"
+              />
+            </div>
+          </div>
+        )}
+        {activeTab === "env" && (
+          <div style={SECTION}>
+            <p style={LABEL}>Envelope</p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+              <Fader
+                value={attack}
+                min={0.001}
+                max={2}
+                step={0.001}
+                label="Attack"
+                unit="s"
+                onChange={handleAttack}
+              />
+              <Fader
+                value={release}
+                min={0.05}
+                max={4}
+                step={0.01}
+                label="Release"
+                unit="s"
+                onChange={handleRelease}
+              />
+            </div>
+          </div>
+        )}
+        {activeTab === "fx" && (
+          <div style={SECTION}>
+            <p style={LABEL}>FX</p>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button
+                onClick={handleReverb}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 8,
+                  border: "1px solid",
+                  borderColor: reverb ? "var(--primary)" : "var(--border)",
+                  background: reverb ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+                  color: reverb ? "var(--foreground)" : "var(--muted-foreground)",
+                  fontSize: 13,
+                  fontWeight: reverb ? 600 : 400,
+                  cursor: "pointer",
+                  transition: "all 150ms",
+                }}
+              >
+                Reverb {reverb ? "ON" : "OFF"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const octaveNavStyle: React.CSSProperties = {
     background: "none",
     border: "1px solid var(--border)",
@@ -326,7 +448,7 @@ export default function Synth1Page() {
       isMobile={isMobile}
       theme={THEME}
       header={header}
-      controls={controls}
+      controls={isMobile ? mobileControls : desktopControls}
       keyboard={keyboard}
       navHeight={48}
     />
