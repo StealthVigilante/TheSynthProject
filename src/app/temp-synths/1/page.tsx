@@ -6,13 +6,18 @@ import { Fader } from "@/components/synth/fader";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformSelect } from "@/components/synth/waveform-select";
 import { WaveformCanvas } from "../waveform-canvas";
+import { SpectrumCanvas } from "../spectrum-canvas";
+import { SynthShell } from "@/components/synths/shared/synth-shell";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { Synth1Engine } from "./engine";
+
+const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
   borderRadius: 12,
-  padding: "16px 20px",
+  padding: "12px 16px",
 };
 
 const LABEL: React.CSSProperties = {
@@ -21,12 +26,14 @@ const LABEL: React.CSSProperties = {
   letterSpacing: "0.15em",
   textTransform: "uppercase" as const,
   color: "var(--muted-foreground)",
-  marginBottom: 12,
+  marginBottom: 10,
 };
 
 export default function Synth1Page() {
   const engineRef = useRef<Synth1Engine | null>(null);
+  const { isMobile, mobileKeyWidth } = useBreakpoint();
 
+  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 1024 });
   const [waveform, setWaveformState] = useState<string>("sine");
   const [filterFreq, setFilterFreqState] = useState(4000);
   const [attack, setAttackState] = useState(0.02);
@@ -35,6 +42,10 @@ export default function Synth1Page() {
 
   useEffect(() => {
     engineRef.current = new Synth1Engine();
+    setAnalyserInfo({
+      sampleRate: engineRef.current.sampleRate,
+      fftSize: engineRef.current.fftSize,
+    });
     return () => engineRef.current?.dispose();
   }, []);
 
@@ -48,6 +59,10 @@ export default function Synth1Page() {
 
   const getWaveform = useCallback((): Float32Array => {
     return engineRef.current?.getWaveform() ?? new Float32Array(1024);
+  }, []);
+
+  const getFFT = useCallback((): Float32Array => {
+    return engineRef.current?.getFFT() ?? new Float32Array(512);
   }, []);
 
   const handleWaveform = useCallback((v: string) => {
@@ -78,22 +93,50 @@ export default function Synth1Page() {
     });
   }, []);
 
-  return (
-    <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
-      {/* Header */}
-      <div>
-        <p style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>The Starter</p>
-        <p style={{ fontSize: 13, color: "var(--muted-foreground)", margin: "4px 0 0" }}>
-          Oscillator · Filter · Envelope · Reverb
-        </p>
-      </div>
+  const vizW = isMobile ? 152 : 220;
+  const vizH = isMobile ? 44 : 60;
 
-      {/* Waveform display */}
-      <div style={{ ...SECTION, display: "flex", justifyContent: "center" }}>
-        <WaveformCanvas getWaveform={getWaveform} width={560} height={80} />
+  const header = (
+    <div
+      style={{
+        padding: isMobile ? "8px 12px" : "12px 16px",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      <p
+        style={{
+          fontSize: isMobile ? 13 : 16,
+          fontWeight: 700,
+          margin: 0,
+        }}
+      >
+        The Starter
+      </p>
+      <p
+        style={{
+          fontSize: isMobile ? 9 : 11,
+          color: "var(--muted-foreground)",
+          margin: isMobile ? "1px 0 6px" : "2px 0 8px",
+        }}
+      >
+        Oscillator · Filter · Envelope · Reverb
+      </p>
+      <div style={{ display: "flex", gap: 6 }}>
+        <WaveformCanvas getWaveform={getWaveform} width={vizW} height={vizH} />
+        <SpectrumCanvas
+          getFFT={getFFT}
+          filterFreq={filterFreq}
+          sampleRate={analyserInfo.sampleRate}
+          fftSize={analyserInfo.fftSize}
+          width={vizW}
+          height={vizH}
+        />
       </div>
+    </div>
+  );
 
-      {/* Oscillator */}
+  const controls = (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: 12 }}>
       <div style={SECTION}>
         <p style={LABEL}>Oscillator</p>
         <WaveformSelect
@@ -104,7 +147,6 @@ export default function Synth1Page() {
         />
       </div>
 
-      {/* Filter */}
       <div style={SECTION}>
         <p style={LABEL}>Filter</p>
         <div style={{ display: "flex", justifyContent: "center" }}>
@@ -116,15 +158,14 @@ export default function Synth1Page() {
             label="Tone"
             unit="Hz"
             onChange={handleFilterFreq}
-            size="lg"
+            size={isMobile ? "sm" : "md"}
           />
         </div>
       </div>
 
-      {/* Envelope */}
       <div style={SECTION}>
         <p style={LABEL}>Envelope</p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 32 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
           <Fader
             value={attack}
             min={0.001}
@@ -146,7 +187,6 @@ export default function Synth1Page() {
         </div>
       </div>
 
-      {/* FX */}
       <div style={SECTION}>
         <p style={LABEL}>FX</p>
         <div style={{ display: "flex", justifyContent: "center" }}>
@@ -169,11 +209,30 @@ export default function Synth1Page() {
           </button>
         </div>
       </div>
-
-      {/* Keyboard */}
-      <div style={SECTION}>
-        <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={3} octaves={2} />
-      </div>
     </div>
+  );
+
+  const keyboard = (
+    <div style={{ padding: "8px 12px" }}>
+      <PianoKeyboard
+        onNoteOn={noteOn}
+        onNoteOff={noteOff}
+        startOctave={3}
+        octaves={isMobile ? 2 : 3}
+        whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
+        whiteKeyHeight={isMobile ? 80 : 72}
+      />
+    </div>
+  );
+
+  return (
+    <SynthShell
+      isMobile={isMobile}
+      theme={THEME}
+      header={header}
+      controls={controls}
+      keyboard={keyboard}
+      navHeight={48}
+    />
   );
 }
