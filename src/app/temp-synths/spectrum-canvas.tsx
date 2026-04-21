@@ -75,6 +75,8 @@ export function SpectrumCanvas({
       ctx.globalAlpha = 1;
 
       // Lowpass EQ curve — exact digital biquad magnitude (Audio EQ Cookbook, Q=1.0)
+      const TOP_PAD = 4;
+      const drawH = height - TOP_PAD;
       ctx.strokeStyle = "#f97316";
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
@@ -82,7 +84,7 @@ export function SpectrumCanvas({
       for (let x = 0; x < width; x++) {
         const freq = MIN_FREQ * Math.pow(10, (x / width) * LOG_RANGE);
         const db = biquadLowpassMagDb(freq, filterFreqRef.current, 1.0, sampleRate);
-        const y = height - ((Math.max(db, MIN_DB) - MIN_DB) / DB_RANGE) * height;
+        const y = TOP_PAD + drawH - ((Math.max(db, MIN_DB) - MIN_DB) / DB_RANGE) * drawH;
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
