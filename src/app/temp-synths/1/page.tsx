@@ -13,6 +13,14 @@ import { Synth1Engine } from "./engine";
 
 const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
+const KEY_NOTE_MAP: Record<string, [string, number]> = {
+  a: ["C", 0],  w: ["C#", 0], s: ["D", 0],  e: ["D#", 0],
+  d: ["E", 0],  f: ["F", 0],  t: ["F#", 0], g: ["G", 0],
+  y: ["G#", 0], h: ["A", 0],  u: ["A#", 0], j: ["B", 0],
+  k: ["C", 1],  o: ["C#", 1], l: ["D", 1],  p: ["D#", 1],
+  ";": ["E", 1],
+};
+
 const SECTION: React.CSSProperties = {
   background: "var(--card)",
   border: "1px solid var(--border)",
@@ -40,6 +48,8 @@ export default function Synth1Page() {
   const [release, setReleaseState] = useState(0.5);
   const [reverb, setReverbState] = useState(false);
   const [startOctave, setStartOctave] = useState(3);
+  const startOctaveRef = useRef(startOctave);
+  useEffect(() => { startOctaveRef.current = startOctave; }, [startOctave]);
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -94,6 +104,46 @@ export default function Synth1Page() {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
+
+    const heldKeys = new Set<string>();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      const entry = KEY_NOTE_MAP[e.key.toLowerCase()];
+      if (!entry) return;
+      e.preventDefault();
+      if (heldKeys.has(e.key.toLowerCase())) return;
+      heldKeys.add(e.key.toLowerCase());
+      const [name, offset] = entry;
+      const note = `${name}${startOctaveRef.current + offset}`;
+      noteOn(note, 0.8);
+      setActiveNotes((prev) => new Set([...prev, note]));
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const entry = KEY_NOTE_MAP[e.key.toLowerCase()];
+      if (!entry) return;
+      heldKeys.delete(e.key.toLowerCase());
+      const [name, offset] = entry;
+      const note = `${name}${startOctaveRef.current + offset}`;
+      noteOff(note);
+      setActiveNotes((prev) => {
+        const next = new Set(prev);
+        next.delete(note);
+        return next;
+      });
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isMobile, noteOn, noteOff]);
 
   const vizW = isMobile ? 152 : 220;
   const vizH = isMobile ? 44 : 60;
