@@ -48,14 +48,14 @@ export function SpectrumCanvas({
       ctx.clearRect(0, 0, width, height);
 
       // FFT bars — one pixel column per x position, log-scaled frequency
+      ctx.fillStyle = "var(--primary)";
+      ctx.globalAlpha = 0.55;
       for (let x = 0; x < width; x++) {
         const freq = MIN_FREQ * Math.pow(10, (x / width) * LOG_RANGE);
         const bin = Math.round((freq * fftSize) / sampleRate);
         if (bin <= 0 || bin >= data.length) continue;
         const db = Math.max(data[bin], MIN_DB);
         const barH = ((db - MIN_DB) / DB_RANGE) * height;
-        ctx.fillStyle = "var(--primary)";
-        ctx.globalAlpha = 0.55;
         ctx.fillRect(x, height - barH, 1, barH);
       }
       ctx.globalAlpha = 1;
