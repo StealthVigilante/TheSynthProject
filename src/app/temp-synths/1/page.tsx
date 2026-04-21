@@ -228,6 +228,7 @@ export default function Synth1Page() {
           options={["sine", "square", "sawtooth", "triangle"]}
           onChange={handleWaveform}
           label="Waveform"
+          size="md"
         />
       </div>
 
@@ -258,6 +259,7 @@ export default function Synth1Page() {
             step={0.001}
             label="Attack"
             unit="s"
+            size="md"
             onChange={handleAttack}
           />
           <Fader
@@ -267,6 +269,7 @@ export default function Synth1Page() {
             step={0.01}
             label="Release"
             unit="s"
+            size="md"
             onChange={handleRelease}
           />
         </div>
