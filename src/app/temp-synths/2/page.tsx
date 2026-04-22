@@ -352,6 +352,7 @@ export default function Synth2Page() {
         <SpectrumCanvas
           getFFT={getFFT}
           filterFreq={cutoff}
+          resonance={resonance}
           sampleRate={analyserInfo.sampleRate}
           fftSize={analyserInfo.fftSize}
           width={vizW}
@@ -383,6 +384,7 @@ export default function Synth2Page() {
         <SpectrumCanvas
           getFFT={getFFT}
           filterFreq={cutoff}
+          resonance={resonance}
           sampleRate={analyserInfo.sampleRate}
           fftSize={analyserInfo.fftSize}
           width={vizW}

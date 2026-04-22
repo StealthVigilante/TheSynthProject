@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 interface SpectrumCanvasProps {
   getFFT: () => Float32Array;
   filterFreq: number;
+  resonance?: number;
   sampleRate: number;
   fftSize: number;
   width?: number;
@@ -16,6 +17,7 @@ const MAX_FREQ = 18000;
 const LOG_RANGE = Math.log10(MAX_FREQ / MIN_FREQ);
 const MIN_DB = -100;
 const DB_RANGE = 100;
+const EQ_HALF = 36; // ±36 dB around 0 dB; 0 dB maps to vertical midpoint
 
 function biquadLowpassMagDb(f: number, fc: number, Q: number, sr: number): number {
   const w0 = 2 * Math.PI * fc / sr;
@@ -34,6 +36,7 @@ function biquadLowpassMagDb(f: number, fc: number, Q: number, sr: number): numbe
 export function SpectrumCanvas({
   getFFT,
   filterFreq,
+  resonance = 1.0,
   sampleRate,
   fftSize,
   width = 320,
@@ -43,9 +46,11 @@ export function SpectrumCanvas({
   const rafRef = useRef<number>(0);
   const getRef = useRef(getFFT);
   const filterFreqRef = useRef(filterFreq);
+  const resonanceRef = useRef(resonance);
 
   useEffect(() => { getRef.current = getFFT; });
   useEffect(() => { filterFreqRef.current = filterFreq; }, [filterFreq]);
+  useEffect(() => { resonanceRef.current = resonance; }, [resonance]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -74,17 +79,16 @@ export function SpectrumCanvas({
       }
       ctx.globalAlpha = 1;
 
-      // Lowpass EQ curve — exact digital biquad magnitude (Audio EQ Cookbook, Q=1.0)
-      const TOP_PAD = 4;
-      const drawH = height - TOP_PAD;
+      // Lowpass EQ curve — 0 dB at vertical midpoint, ±EQ_HALF dB range
       ctx.strokeStyle = "#f97316";
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.beginPath();
       for (let x = 0; x < width; x++) {
         const freq = MIN_FREQ * Math.pow(10, (x / width) * LOG_RANGE);
-        const db = biquadLowpassMagDb(freq, filterFreqRef.current, 1.0, sampleRate);
-        const y = TOP_PAD + drawH - ((Math.max(db, MIN_DB) - MIN_DB) / DB_RANGE) * drawH;
+        const db = biquadLowpassMagDb(freq, filterFreqRef.current, resonanceRef.current, sampleRate);
+        const clamped = Math.max(-EQ_HALF, Math.min(EQ_HALF, db));
+        const y = height / 2 - (clamped / EQ_HALF) * (height / 2);
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
