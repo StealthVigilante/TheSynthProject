@@ -63,6 +63,19 @@ const TABS = [
   { id: "fx" as const, label: "FX" },
 ];
 
+const toggleStyle = (on: boolean): React.CSSProperties => ({
+  padding: "6px 12px",
+  borderRadius: 8,
+  border: "1px solid",
+  borderColor: on ? "var(--primary)" : "var(--border)",
+  background: on ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+  color: on ? "var(--foreground)" : "var(--muted-foreground)",
+  fontSize: 12,
+  fontWeight: on ? 600 : 400,
+  cursor: "pointer",
+  transition: "all 150ms",
+});
+
 const lerp = (a: number, b: number, t: number) =>
   a + (b - a) * Math.min(1, Math.max(0, t));
 
@@ -269,19 +282,6 @@ export default function Synth2Page() {
     engineRef.current?.setVolume(v);
   }, []);
 
-  const toggleStyle = (on: boolean): React.CSSProperties => ({
-    padding: "6px 12px",
-    borderRadius: 8,
-    border: "1px solid",
-    borderColor: on ? "var(--primary)" : "var(--border)",
-    background: on ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
-    color: on ? "var(--foreground)" : "var(--muted-foreground)",
-    fontSize: 12,
-    fontWeight: on ? 600 : 400,
-    cursor: "pointer",
-    transition: "all 150ms",
-  });
-
   useEffect(() => {
     if (isMobile) return;
 
@@ -296,10 +296,7 @@ export default function Synth2Page() {
       heldKeys.add(e.key.toLowerCase());
       const [name, offset] = entry;
       const note = `${name}${startOctaveRef.current + offset}`;
-      engineRef.current?.noteOn(note, 0.8);
-      setActiveNotes((prev) => new Set([...prev, note]));
-      setNoteOnMs(performance.now());
-      setNoteOffMs(null);
+      noteOn(note, 0.8);
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -308,13 +305,7 @@ export default function Synth2Page() {
       heldKeys.delete(e.key.toLowerCase());
       const [name, offset] = entry;
       const note = `${name}${startOctaveRef.current + offset}`;
-      engineRef.current?.noteOff(note);
-      setActiveNotes((prev) => {
-        const next = new Set(prev);
-        next.delete(note);
-        return next;
-      });
-      setNoteOffMs(performance.now());
+      noteOff(note);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -323,7 +314,7 @@ export default function Synth2Page() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isMobile]);
+  }, [isMobile, noteOn, noteOff]);
 
   const vizW = isMobile ? 100 : 280;
   const vizH = isMobile ? 36 : 76;
