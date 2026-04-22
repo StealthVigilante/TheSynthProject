@@ -1,32 +1,18 @@
 "use client";
 
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Knob } from "@/components/synth/knob";
 import { Fader } from "@/components/synth/fader";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformSelect } from "@/components/synth/waveform-select";
 import { WaveformCanvas } from "../waveform-canvas";
 import { SpectrumCanvas } from "../spectrum-canvas";
+import { SynthShell } from "@/components/synths/shared/synth-shell";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { Synth3Engine } from "../3/engine";
 
-// ── Hot Magenta palette ─────────────────────────────────────────
-const ACCENT      = "#e040fb";
-const ACCENT_DIM  = "#9a00c0";
-const CHB         = "#2a003d";
-const FACEPLATE   = "#0d0010";
-const SEC_BG      = "#070009";
-const SEC_BDR     = "#1a0025";
-const SCREEN_BG   = "#0a0012";
-// ────────────────────────────────────────────────────────────────
-
-const themeVars = {
-  "--primary":            ACCENT,
-  "--color-primary":      ACCENT,
-  "--primary-foreground": "#0d0010",
-} as CSSProperties;
-
-const MOBILE_THEME = { bg: "#070009", border: "#1a0025", panel: "#0d0010" };
+const ACCENT = "#00d4ff";
+const MOBILE_THEME = { bg: "#0a0a0a", border: "#1e1e1e", panel: "#0f0f0f" };
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -49,15 +35,17 @@ function FilterTypeSelect({ value, onChange }: { value: BiquadFilterType; onChan
   const options: BiquadFilterType[] = ["lowpass", "highpass", "bandpass"];
   const labels: Record<string, string> = { lowpass: "LP", highpass: "HP", bandpass: "BP" };
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
       {options.map((o) => (
         <button key={o} onClick={() => onChange(o)} style={{
-          padding: "3px 7px", borderRadius: 4, border: "1px solid",
-          borderColor: value === o ? ACCENT : SEC_BDR,
-          background: value === o ? `${ACCENT}22` : SEC_BG,
-          color: value === o ? ACCENT : "#555",
+          padding: "3px 8px", borderRadius: 3, border: "1px solid",
+          borderColor: value === o ? ACCENT : "#2a2a2a",
+          background: value === o ? "#001a22" : "#080808",
+          color: value === o ? ACCENT : "#404040",
           fontSize: 10, fontWeight: value === o ? 700 : 400, cursor: "pointer",
-          letterSpacing: "0.08em", transition: "all 150ms",
+          fontFamily: "Arial", letterSpacing: "0.08em",
+          boxShadow: value === o ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+          transition: "all 150ms",
         }}>{labels[o]}</button>
       ))}
     </div>
@@ -70,7 +58,7 @@ interface EnvCurveProps {
   width?: number; height?: number;
 }
 
-function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOffMs, width = 200, height = 70 }: EnvCurveProps) {
+function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOffMs, width = 180, height = 60 }: EnvCurveProps) {
   const W = width, H = height;
   const top = 5, bot = H - 5;
   const maxT = Math.max(attack + decay + release, 2);
@@ -119,42 +107,20 @@ function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOff
   }, [noteOnMs, noteOffMs, attack, decay, release, aX, dX, sX, rEnd, top, bot, susY]);
 
   return (
-    <svg width={W} height={H} style={{ display: "block", overflow: "visible", filter: `drop-shadow(0 0 4px ${ACCENT}88)` }}>
+    <svg width={W} height={H} style={{ display: "block", overflow: "visible", filter: "drop-shadow(0 0 3px rgba(0,212,255,0.4))" }}>
       <defs>
         <linearGradient id="env3h-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={ACCENT} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={ACCENT} stopOpacity="0.04" />
+          <stop offset="0%" stopColor={ACCENT} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={ACCENT} stopOpacity="0.03" />
         </linearGradient>
       </defs>
       <path d={`${d} L ${rEnd} ${bot} Z`} fill="url(#env3h-grad)" />
       <path d={d} fill="none" stroke={ACCENT} strokeWidth={1.5} strokeLinejoin="round" />
       {dot.visible && (
         <circle cx={dot.x} cy={dot.y} r={4} fill={ACCENT}
-          style={{ filter: `drop-shadow(0 0 6px ${ACCENT})` }} />
+          style={{ filter: "drop-shadow(0 0 5px rgba(0,212,255,0.8))" }} />
       )}
     </svg>
-  );
-}
-
-const SEC_LABEL: CSSProperties = {
-  fontSize: 9, fontWeight: 700, letterSpacing: "0.2em",
-  textTransform: "uppercase", color: ACCENT_DIM, marginBottom: 10,
-};
-const SUBLABEL: CSSProperties = {
-  fontSize: 8, fontWeight: 700, letterSpacing: "0.15em",
-  textTransform: "uppercase", color: "#444", marginBottom: 6,
-};
-
-function HSection({ label, children, style }: { label: string; children: React.ReactNode; style?: CSSProperties }) {
-  return (
-    <div style={{
-      background: SEC_BG, borderTop: `2px solid ${ACCENT}`,
-      borderRadius: "0 0 6px 6px", padding: "10px 14px",
-      ...style,
-    }}>
-      <p style={SEC_LABEL}>{label}</p>
-      {children}
-    </div>
   );
 }
 
@@ -162,6 +128,7 @@ export default function Synth3HardwarePage() {
   const engineRef = useRef<Synth3Engine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
   const [activeTab, setActiveTab] = useState<"osc" | "filter" | "env" | "lfo">("osc");
+  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 2048 });
 
   const [osc1Type, setOsc1Type] = useState<string>("sawtooth");
   const [osc2Type, setOsc2Type] = useState<string>("sawtooth");
@@ -192,18 +159,21 @@ export default function Synth3HardwarePage() {
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
   const [noteOnMs, setNoteOnMs] = useState<number | null>(null);
   const [noteOffMs, setNoteOffMs] = useState<number | null>(null);
+  const [currentNote, setCurrentNote] = useState<string | null>(null);
   const [startOctave, setStartOctave] = useState(3);
   const startOctaveRef = useRef(startOctave);
   useEffect(() => { startOctaveRef.current = startOctave; }, [startOctave]);
 
   useEffect(() => {
     engineRef.current = new Synth3Engine();
+    setAnalyserInfo({ sampleRate: engineRef.current.sampleRate, fftSize: engineRef.current.fftSize });
     return () => engineRef.current?.dispose();
   }, []);
 
   const noteOn = useCallback((note: string, vel: number) => {
     engineRef.current?.noteOn(note, vel);
     setActiveNotes((prev) => new Set(prev).add(note));
+    setCurrentNote(note);
     setNoteOnMs(performance.now());
     setNoteOffMs(null);
   }, []);
@@ -211,6 +181,7 @@ export default function Synth3HardwarePage() {
   const noteOff = useCallback((note: string) => {
     engineRef.current?.noteOff(note);
     setActiveNotes((prev) => { const s = new Set(prev); s.delete(note); return s; });
+    setCurrentNote(null);
     setNoteOffMs(performance.now());
   }, []);
 
@@ -220,225 +191,95 @@ export default function Synth3HardwarePage() {
   const e = engineRef.current;
 
   useEffect(() => {
+    if (isMobile) return;
     const pressed = new Set<string>();
     const onDown = (ev: KeyboardEvent) => {
-      if (ev.repeat || ev.target instanceof HTMLInputElement) return;
+      if (ev.repeat) return;
       const entry = KEY_NOTE_MAP[ev.key.toLowerCase()];
       if (!entry) return;
-      const [name, octOffset] = entry;
-      const note = `${name}${startOctaveRef.current + octOffset}`;
-      if (pressed.has(ev.key)) return;
-      pressed.add(ev.key);
+      ev.preventDefault();
+      if (pressed.has(ev.key.toLowerCase())) return;
+      pressed.add(ev.key.toLowerCase());
+      const [name, off] = entry;
+      const note = `${name}${startOctaveRef.current + off}`;
       noteOn(note, 0.8);
+      setActiveNotes((prev) => new Set([...prev, note]));
     };
     const onUp = (ev: KeyboardEvent) => {
       const entry = KEY_NOTE_MAP[ev.key.toLowerCase()];
       if (!entry) return;
-      const [name, octOffset] = entry;
-      const note = `${name}${startOctaveRef.current + octOffset}`;
-      pressed.delete(ev.key);
+      pressed.delete(ev.key.toLowerCase());
+      const [name, off] = entry;
+      const note = `${name}${startOctaveRef.current + off}`;
       noteOff(note);
+      setActiveNotes((prev) => { const s = new Set(prev); s.delete(note); return s; });
     };
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
-  }, [noteOn, noteOff]);
+  }, [isMobile, noteOn, noteOff]);
 
-  const desktopView = (
-    <div style={{ ...themeVars, minHeight: "100vh", background: "#050008", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{
-        width: "100%", maxWidth: 900,
-        background: `linear-gradient(160deg, #1a0028 0%, #0d0010 40%, #070009 100%)`,
-        borderRadius: 18,
-        boxShadow: `0 32px 80px #00000088, 0 0 0 1px ${CHB}, inset 0 1px 0 #3a005560`,
-        transform: "perspective(900px) rotateX(-3deg)",
-        transformOrigin: "bottom center",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          background: `linear-gradient(90deg, #0d0010 0%, #1a0025 50%, #0d0010 100%)`,
-          borderBottom: `1px solid ${CHB}`,
-          padding: "10px 24px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div>
-            <span style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 900, letterSpacing: "0.3em", color: ACCENT, textTransform: "uppercase" }}>OSCISCOOPS</span>
-            <span style={{ marginLeft: 16, fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", color: "#444", textTransform: "uppercase" }}>Model 3 · The Classic</span>
-          </div>
-          <div style={{ display: "flex", gap: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }} />
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a0025", border: `1px solid ${CHB}` }} />
-          </div>
-        </div>
+  const themeVars = {
+    "--primary": ACCENT,
+    "--color-primary": ACCENT,
+    "--primary-foreground": "#000a0f",
+  } as React.CSSProperties;
 
-        <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{
-            background: SCREEN_BG, borderRadius: 8, padding: 12,
-            border: `1px solid ${SEC_BDR}`,
-            display: "flex", gap: 12, alignItems: "center",
-          }}>
-            <WaveformCanvas getWaveform={getWaveform} width={300} height={56} />
-            <SpectrumCanvas
-              getFFT={getFFT}
-              filterFreq={filterCutoff}
-              resonance={filterRes}
-              sampleRate={engineRef.current?.sampleRate ?? 44100}
-              fftSize={engineRef.current?.fftSize ?? 2048}
-              lineColor={ACCENT}
-              width={220}
-              height={56}
-            />
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4, alignSelf: "center" }}>
-              <span style={{ fontSize: 9, letterSpacing: "0.2em", color: "#444" }}>DUAL OSC · FILTER · DUAL ADSR · LFO</span>
-              <span style={{ fontSize: 9, color: ACCENT_DIM, fontFamily: "monospace" }}>SR: {engineRef.current?.sampleRate ?? "–"} Hz</span>
-            </div>
-          </div>
+  // ── Mobile ──────────────────────────────────────────────────────
+  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1, padding: "8px 4px", fontSize: 10, fontWeight: 700,
+    letterSpacing: "0.08em", background: "none", border: "none",
+    borderBottom: active ? `2px solid ${ACCENT}` : "2px solid transparent",
+    color: active ? "#ffffff" : "#404040", cursor: "pointer",
+  });
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <HSection label="Oscillators">
-              <p style={SUBLABEL}>OSC 1</p>
-              <WaveformSelect value={osc1Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc1Type(v); e?.setOsc1Type(v as OscillatorType); }} label="" />
-              <div style={{ height: 8 }} />
-              <p style={SUBLABEL}>OSC 2</p>
-              <WaveformSelect value={osc2Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc2Type(v); e?.setOsc2Type(v as OscillatorType); }} label="" />
-              <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 12 }}>
-                <Knob value={osc2Detune} min={-100} max={100} step={1} label="Detune" unit="¢" onChange={(v) => { setOsc2Detune(v); e?.setOsc2Detune(v); }} size="sm" />
-                <Knob value={oscMix} min={0} max={1} step={0.01} label="Mix" onChange={(v) => { setOscMix(v); e?.setOscMix(v); }} size="sm" />
-              </div>
-            </HSection>
+  const mobilePanelStyle: React.CSSProperties = {
+    background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 5, padding: "14px 12px",
+  };
 
-            <HSection label="Filter">
-              <FilterTypeSelect value={filterType} onChange={(v) => { setFilterTypeState(v); e?.setFilterType(v); }} />
-              <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
-                <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
-                <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
-              </div>
-              <p style={{ ...SUBLABEL, marginTop: 10 }}>Filter Env</p>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
-                <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
-              </div>
-              <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
-                <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
-                <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
-                <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
-              </div>
-            </HSection>
-
-            <HSection label="Amp Env">
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                <Knob value={volume} min={0} max={1} step={0.01} label="Vol" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
-                  <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
-                  <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
-                  <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
-                </div>
-                <div style={{ background: SCREEN_BG, borderRadius: 6, padding: "4px 6px", border: `1px solid ${SEC_BDR}` }}>
-                  <EnvelopeCurve
-                    attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR}
-                    noteOnMs={noteOnMs} noteOffMs={noteOffMs}
-                    width={130} height={70}
-                  />
-                </div>
-              </div>
-            </HSection>
-          </div>
-
-          <HSection label="LFO">
-            <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-              <WaveformSelect value={lfoType} options={["sine", "square"]} onChange={(v) => { setLfoType(v); e?.setLfoType(v as OscillatorType); }} label="Shape" />
-              <Knob value={lfoRate} min={0.1} max={20} step={0.1} label="Rate" unit="Hz" onChange={(v) => { setLfoRate(v); e?.setLfoRate(v); }} size="sm" />
-              <Knob value={lfoDepth} min={0} max={100} step={1} label="Depth" onChange={(v) => { setLfoDepth(v); e?.setLfoDepth(v); }} size="sm" />
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={{ fontSize: 9, color: "#444", letterSpacing: "0.15em" }}>ROUTE</span>
-                <div style={{ display: "flex", gap: 4 }}>
-                  {(["pitch", "filter"] as const).map((r) => (
-                    <button key={r} onClick={() => { setLfoRoute(r); e?.setLfoRoute(r); }} style={{
-                      padding: "3px 10px", borderRadius: 4, border: "1px solid",
-                      borderColor: lfoRoute === r ? ACCENT : SEC_BDR,
-                      background: lfoRoute === r ? `${ACCENT}22` : SEC_BG,
-                      color: lfoRoute === r ? ACCENT : "#555",
-                      fontSize: 10, cursor: "pointer", letterSpacing: "0.08em",
-                      textTransform: "capitalize", transition: "all 150ms",
-                    }}>{r}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </HSection>
-
-          <div style={{ background: SCREEN_BG, borderRadius: 8, padding: "10px 14px", border: `1px solid ${SEC_BDR}` }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ display: "flex", gap: 4 }}>
-                <button onClick={() => setStartOctave((o) => Math.max(1, o - 1))} style={{ padding: "2px 10px", borderRadius: 4, border: `1px solid ${SEC_BDR}`, background: SEC_BG, color: "#555", fontSize: 14, cursor: "pointer" }}>−</button>
-                <span style={{ fontSize: 11, color: "#555", alignSelf: "center" }}>Oct {startOctave}</span>
-                <button onClick={() => setStartOctave((o) => Math.min(6, o + 1))} style={{ padding: "2px 10px", borderRadius: 4, border: `1px solid ${SEC_BDR}`, background: SEC_BG, color: "#555", fontSize: 14, cursor: "pointer" }}>+</button>
-              </div>
-              <span style={{ fontSize: 9, color: "#333", letterSpacing: "0.15em" }}>QWERTY</span>
-            </div>
-            <PianoKeyboard
-              onNoteOn={noteOn}
-              onNoteOff={noteOff}
-              startOctave={startOctave}
-              octaves={3}
-              whiteKeyWidth={24}
-              whiteKeyHeight={72}
-              activeNotes={activeNotes}
-            />
-          </div>
-        </div>
+  const mobileHeader = (
+    <div style={{ padding: "8px 12px", borderBottom: "1px solid #1e1e1e", display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#ffffff", fontFamily: "Arial" }}>The Classic</p>
+        <p style={{ fontSize: 9, color: "#404040", margin: "1px 0 0" }}>Hardware Edition</p>
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
+        <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={100} height={36} lineColor={ACCENT} />
+        <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
       </div>
     </div>
   );
 
-  const mobileView = (
-    <div style={{ ...themeVars, minHeight: "100vh", background: MOBILE_THEME.bg, display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${SEC_BDR}` }}>
-        <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: ACCENT }}>The Classic</p>
-        <p style={{ margin: "2px 0 8px", fontSize: 10, color: "#444" }}>Dual Osc · Filter · Dual ADSR · LFO</p>
-        <WaveformCanvas getWaveform={getWaveform} width={320} height={50} />
-      </div>
-
-      <div style={{ display: "flex", borderBottom: `1px solid ${SEC_BDR}` }}>
-        {TABS.map((t) => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            flex: 1, padding: "8px 0", background: "transparent", border: "none",
-            borderBottom: `2px solid ${activeTab === t.id ? ACCENT : "transparent"}`,
-            color: activeTab === t.id ? ACCENT : "#444",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", cursor: "pointer",
-          }}>{t.label}</button>
+  const mobileControls = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1e1e1e", flexShrink: 0 }}>
+        {TABS.map((tab) => (
+          <button key={tab.id} style={tabBtnStyle(activeTab === tab.id)} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>
         ))}
       </div>
-
-      <div style={{ flex: 1, overflow: "auto", padding: 12 }}>
+      <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
         {activeTab === "osc" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <p style={SUBLABEL}>OSC 1</p>
-              <WaveformSelect value={osc1Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc1Type(v); e?.setOsc1Type(v as OscillatorType); }} label="" />
-            </div>
-            <div>
-              <p style={SUBLABEL}>OSC 2</p>
-              <WaveformSelect value={osc2Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc2Type(v); e?.setOsc2Type(v as OscillatorType); }} label="" />
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+          <div style={mobilePanelStyle}>
+            <p style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", marginBottom: 8 }}>OSC 1</p>
+            <WaveformSelect value={osc1Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc1Type(v); e?.setOsc1Type(v as OscillatorType); }} label="" />
+            <p style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", margin: "12px 0 8px" }}>OSC 2</p>
+            <WaveformSelect value={osc2Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc2Type(v); e?.setOsc2Type(v as OscillatorType); }} label="" />
+            <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12 }}>
               <Knob value={osc2Detune} min={-100} max={100} step={1} label="Detune" unit="¢" onChange={(v) => { setOsc2Detune(v); e?.setOsc2Detune(v); }} size="sm" />
               <Knob value={oscMix} min={0} max={1} step={0.01} label="Mix" onChange={(v) => { setOscMix(v); e?.setOscMix(v); }} size="sm" />
             </div>
           </div>
         )}
         {activeTab === "filter" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={mobilePanelStyle}>
             <FilterTypeSelect value={filterType} onChange={(v) => { setFilterTypeState(v); e?.setFilterType(v); }} />
-            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12 }}>
               <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
               <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
             </div>
-            <p style={{ ...SUBLABEL, marginTop: 8 }}>Filter Env</p>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+            <p style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", margin: "12px 0 8px" }}>FILTER ENV</p>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
               <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
@@ -450,9 +291,9 @@ export default function Synth3HardwarePage() {
           </div>
         )}
         {activeTab === "env" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <Knob value={volume} min={0} max={1} step={0.01} label="Vol" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+              <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "flex-start" }}>
               <div style={{ display: "flex", gap: 6 }}>
@@ -461,33 +302,30 @@ export default function Synth3HardwarePage() {
                 <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
                 <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
               </div>
-              <div style={{ background: SCREEN_BG, borderRadius: 6, padding: "4px 6px", border: `1px solid ${SEC_BDR}` }}>
-                <EnvelopeCurve
-                  attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR}
-                  noteOnMs={noteOnMs} noteOffMs={noteOffMs}
-                  width={130} height={60}
-                />
+              <div style={{ background: "#000", borderRadius: 3, padding: "4px 6px", border: "1px solid #1e1e1e" }}>
+                <EnvelopeCurve attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR} noteOnMs={noteOnMs} noteOffMs={noteOffMs} width={120} height={56} />
               </div>
             </div>
           </div>
         )}
         {activeTab === "lfo" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={mobilePanelStyle}>
             <WaveformSelect value={lfoType} options={["sine", "square"]} onChange={(v) => { setLfoType(v); e?.setLfoType(v as OscillatorType); }} label="Shape" />
-            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12 }}>
               <Knob value={lfoRate} min={0.1} max={20} step={0.1} label="Rate" unit="Hz" onChange={(v) => { setLfoRate(v); e?.setLfoRate(v); }} size="sm" />
               <Knob value={lfoDepth} min={0} max={100} step={1} label="Depth" onChange={(v) => { setLfoDepth(v); e?.setLfoDepth(v); }} size="sm" />
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span style={{ fontSize: 10, color: "#444" }}>Route</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>ROUTE</span>
               <div style={{ display: "flex", gap: 4 }}>
                 {(["pitch", "filter"] as const).map((r) => (
                   <button key={r} onClick={() => { setLfoRoute(r); e?.setLfoRoute(r); }} style={{
-                    padding: "5px 14px", borderRadius: 4, border: "1px solid",
-                    borderColor: lfoRoute === r ? ACCENT : SEC_BDR,
-                    background: lfoRoute === r ? `${ACCENT}22` : SEC_BG,
-                    color: lfoRoute === r ? ACCENT : "#555",
-                    fontSize: 11, cursor: "pointer", textTransform: "capitalize",
+                    padding: "4px 12px", borderRadius: 3, border: "1px solid",
+                    borderColor: lfoRoute === r ? ACCENT : "#2a2a2a",
+                    background: lfoRoute === r ? "#001a22" : "#0a0a0a",
+                    color: lfoRoute === r ? ACCENT : "#404040",
+                    fontSize: 10, cursor: "pointer", fontFamily: "Arial",
+                    letterSpacing: "0.08em", textTransform: "capitalize",
                   }}>{r}</button>
                 ))}
               </div>
@@ -495,27 +333,197 @@ export default function Synth3HardwarePage() {
           </div>
         )}
       </div>
-
-      <div style={{ borderTop: `1px solid ${SEC_BDR}`, padding: "8px 10px", background: SEC_BG }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button onClick={() => setStartOctave((o) => Math.max(1, o - 1))} style={{ padding: "2px 10px", borderRadius: 4, border: `1px solid ${SEC_BDR}`, background: SCREEN_BG, color: "#555", fontSize: 14, cursor: "pointer" }}>−</button>
-            <span style={{ fontSize: 11, color: "#555", alignSelf: "center" }}>Oct {startOctave}</span>
-            <button onClick={() => setStartOctave((o) => Math.min(6, o + 1))} style={{ padding: "2px 10px", borderRadius: 4, border: `1px solid ${SEC_BDR}`, background: SCREEN_BG, color: "#555", fontSize: 14, cursor: "pointer" }}>+</button>
-          </div>
-        </div>
-        <PianoKeyboard
-          onNoteOn={noteOn}
-          onNoteOff={noteOff}
-          startOctave={startOctave}
-          octaves={2}
-          whiteKeyWidth={mobileKeyWidth}
-          whiteKeyHeight={80}
-          activeNotes={activeNotes}
-        />
-      </div>
     </div>
   );
 
-  return isMobile ? mobileView : desktopView;
+  const mobileKeyboard = (
+    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={startOctave} octaves={2} activeNotes={activeNotes} whiteKeyWidth={mobileKeyWidth} whiteKeyHeight={80} />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div style={themeVars}>
+        <SynthShell isMobile={true} theme={MOBILE_THEME} header={mobileHeader} controls={mobileControls} keyboard={mobileKeyboard} navHeight={48} />
+      </div>
+    );
+  }
+
+  // ── Desktop chassis (synth-1 style) ──────────────────────────────
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", color: "#404040",
+    fontFamily: "Arial", textTransform: "uppercase", marginBottom: 12,
+    borderBottom: "1px solid #1a1a1a", paddingBottom: 8,
+  };
+
+  const sectionPanel: React.CSSProperties = {
+    background: "#0a0a0a", border: "1px solid #1e1e1e",
+    borderTop: `2px solid ${ACCENT}`, borderRadius: 5,
+    padding: "14px 12px", textAlign: "center",
+  };
+
+  return (
+    <div style={{
+      ...themeVars,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      minHeight: "calc(100dvh - 48px)", background: "#0a0a0a",
+    }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* 3D lid */}
+        <div style={{
+          width: 860, height: 18,
+          background: "linear-gradient(180deg, #2e2e2e, #1e1e1e)",
+          borderRadius: "12px 12px 0 0",
+          border: "1px solid #3a3a3a", borderBottom: "none",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+          transform: "perspective(500px) rotateX(-18deg) scaleY(0.55)",
+          transformOrigin: "bottom center", marginBottom: -1,
+        }} />
+
+        {/* Chassis body */}
+        <div style={{
+          background: "linear-gradient(175deg, #1e1e1e 0%, #141414 60%, #0e0e0e 100%)",
+          borderRadius: "0 0 10px 10px",
+          border: "1px solid #282828", borderTop: "1px solid #3a3a3a",
+          boxShadow: `
+            inset 0 1px 0 rgba(255,255,255,0.04),
+            -5px 0 0 #0c0c0c, 5px 0 0 #0c0c0c,
+            0 5px 0 #080808, 0 7px 0 #060606,
+            0 9px 0 #040404, 0 18px 50px rgba(0,0,0,0.95)
+          `,
+          width: 860,
+        }}>
+          {/* Faceplate */}
+          <div style={{
+            margin: 14, background: "#0f0f0f", borderRadius: 6,
+            border: "1px solid #1a1a1a",
+            boxShadow: "inset 0 2px 10px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.02)",
+            padding: "16px 18px",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              borderBottom: "1px solid #1a1a1a", paddingBottom: 14, marginBottom: 14,
+            }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.3em", color: "#ffffff", fontFamily: "Arial", margin: 0 }}>THE CLASSIC</p>
+                <p style={{ fontSize: 7, color: "#404040", letterSpacing: "0.25em", margin: "3px 0 0", fontFamily: "Arial" }}>SYNTHESIZER · MK III</p>
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{ background: "#000", border: "1px solid #1e1e1e", borderRadius: 3, padding: "5px 12px" }}>
+                  <span style={{ color: ACCENT, fontSize: 16, fontFamily: "monospace", letterSpacing: 3, textShadow: "0 0 8px rgba(0,212,255,0.5)" }}>
+                    {currentNote ?? "---"}
+                  </span>
+                </div>
+                <WaveformCanvas getWaveform={getWaveform} width={200} height={48} />
+                <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={200} height={48} lineColor={ACCENT} />
+              </div>
+              <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
+            </div>
+
+            {/* Controls grid — row 1: OSC | FILTER | FILTER ENV | AMP ENV */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              {/* OSC */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>OSC</p>
+                <p style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", marginBottom: 6 }}>OSC 1</p>
+                <WaveformSelect value={osc1Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc1Type(v); e?.setOsc1Type(v as OscillatorType); }} label="" />
+                <p style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", margin: "10px 0 6px" }}>OSC 2</p>
+                <WaveformSelect value={osc2Type} options={["sine", "square", "sawtooth", "triangle"]} onChange={(v) => { setOsc2Type(v); e?.setOsc2Type(v as OscillatorType); }} label="" />
+                <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
+                  <Knob value={osc2Detune} min={-100} max={100} step={1} label="Detune" unit="¢" onChange={(v) => { setOsc2Detune(v); e?.setOsc2Detune(v); }} size="sm" />
+                  <Knob value={oscMix} min={0} max={1} step={0.01} label="Mix" onChange={(v) => { setOscMix(v); e?.setOscMix(v); }} size="sm" />
+                </div>
+              </div>
+
+              {/* FILTER */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>Filter</p>
+                <FilterTypeSelect value={filterType} onChange={(v) => { setFilterTypeState(v); e?.setFilterType(v); }} />
+                <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
+                  <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
+                  <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
+                </div>
+              </div>
+
+              {/* FILTER ENV */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>Filter Env</p>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                  <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                  <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
+                  <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
+                  <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
+                  <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
+                </div>
+              </div>
+
+              {/* AMP ENV */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>Amp Env</p>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
+                    <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
+                    <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
+                    <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
+                  </div>
+                  <div style={{ background: "#000", borderRadius: 3, padding: "4px 6px", border: "1px solid #1e1e1e" }}>
+                    <EnvelopeCurve attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR} noteOnMs={noteOnMs} noteOffMs={noteOffMs} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* LFO row */}
+            <div style={{ ...sectionPanel, textAlign: "left", marginBottom: 12 }}>
+              <p style={sectionLabel}>LFO</p>
+              <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+                <WaveformSelect value={lfoType} options={["sine", "square"]} onChange={(v) => { setLfoType(v); e?.setLfoType(v as OscillatorType); }} label="Shape" />
+                <Knob value={lfoRate} min={0.1} max={20} step={0.1} label="Rate" unit="Hz" onChange={(v) => { setLfoRate(v); e?.setLfoRate(v); }} size="sm" />
+                <Knob value={lfoDepth} min={0} max={100} step={1} label="Depth" onChange={(v) => { setLfoDepth(v); e?.setLfoDepth(v); }} size="sm" />
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em" }}>ROUTE</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["pitch", "filter"] as const).map((r) => (
+                      <button key={r} onClick={() => { setLfoRoute(r); e?.setLfoRoute(r); }} style={{
+                        padding: "3px 10px", borderRadius: 3, border: "1px solid",
+                        borderColor: lfoRoute === r ? ACCENT : "#2a2a2a",
+                        background: lfoRoute === r ? "#001a22" : "#0a0a0a",
+                        color: lfoRoute === r ? ACCENT : "#404040",
+                        fontSize: 9, cursor: "pointer", fontFamily: "Arial",
+                        letterSpacing: "0.1em", textTransform: "capitalize",
+                        boxShadow: lfoRoute === r ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                      }}>{r}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard */}
+            <div style={{ background: "#050505", borderRadius: 5, border: "1px solid #111", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+              <div style={{
+                display: "flex", alignItems: "stretch", height: 28,
+                background: "linear-gradient(90deg, #080808, #111 10%, #111 90%, #080808)",
+                borderBottom: "1px solid #080808",
+              }}>
+                <button style={{ border: "none", borderRight: "1px solid #1a1a1a", background: "transparent", color: startOctave <= 1 ? "#222" : "#666", fontSize: 12, padding: "0 16px", cursor: startOctave <= 1 ? "default" : "pointer", fontFamily: "Arial" }}
+                  onClick={() => setStartOctave((o) => Math.max(1, o - 1))} disabled={startOctave <= 1}>◀</button>
+                <span style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#2a2a2a", fontSize: 9, fontFamily: "Arial", letterSpacing: "0.3em" }}>
+                  OCT {startOctave}–{startOctave + 2}
+                </span>
+                <button style={{ border: "none", borderLeft: "1px solid #1a1a1a", background: "transparent", color: startOctave >= 5 ? "#222" : "#666", fontSize: 12, padding: "0 16px", cursor: startOctave >= 5 ? "default" : "pointer", fontFamily: "Arial" }}
+                  onClick={() => setStartOctave((o) => Math.min(5, o + 1))} disabled={startOctave >= 5}>▶</button>
+              </div>
+              <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={startOctave} octaves={3} activeNotes={activeNotes} whiteKeyWidth={28} whiteKeyHeight={90} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
