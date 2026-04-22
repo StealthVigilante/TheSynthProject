@@ -11,7 +11,10 @@ export class Synth3Engine {
   private ampEnvGain: GainNode;
   private master: GainNode;
   private analyser: AnalyserNode;
+  private compressor: DynamicsCompressorNode;
+  private masterGain: GainNode;
   private buf: Float32Array;
+  private fftBuf: Float32Array;
 
   // LFO
   private lfo: OscillatorNode;
@@ -67,8 +70,19 @@ export class Synth3Engine {
     this.master.gain.value = 0.8;
 
     this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 1024;
+    this.analyser.fftSize = 2048;
     this.buf = new Float32Array(this.analyser.fftSize);
+    this.fftBuf = new Float32Array(this.analyser.frequencyBinCount);
+
+    this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.value = -18;
+    this.compressor.knee.value = 12;
+    this.compressor.ratio.value = 12;
+    this.compressor.attack.value = 0.003;
+    this.compressor.release.value = 0.25;
+
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0.8;
 
     // LFO setup
     this.lfo = this.ctx.createOscillator();
@@ -97,7 +111,9 @@ export class Synth3Engine {
     this.filter.connect(this.ampEnvGain);
     this.ampEnvGain.connect(this.master);
     this.master.connect(this.analyser);
-    this.analyser.connect(this.ctx.destination);
+    this.analyser.connect(this.compressor);
+    this.compressor.connect(this.masterGain);
+    this.masterGain.connect(this.ctx.destination);
   }
 
   noteOn(note: string, velocity = 0.8): void {
@@ -260,6 +276,18 @@ export class Synth3Engine {
     return this.buf;
   }
 
+  getFFT(): Float32Array {
+    this.analyser.getFloatFrequencyData(this.fftBuf as any);
+    return this.fftBuf;
+  }
+
+  get sampleRate(): number { return this.ctx.sampleRate; }
+  get fftSize(): number { return this.analyser.fftSize; }
+
+  setVolume(v: number): void {
+    this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
+  }
+
   dispose(): void {
     this.osc1?.stop();
     this.osc1?.disconnect();
@@ -276,5 +304,7 @@ export class Synth3Engine {
     this.ampEnvGain.disconnect();
     this.master.disconnect();
     this.analyser.disconnect();
+    this.compressor.disconnect();
+    this.masterGain.disconnect();
   }
 }
