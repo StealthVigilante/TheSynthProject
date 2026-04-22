@@ -1,15 +1,26 @@
 // src/app/temp-synths/3/page.tsx
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { Knob } from "@/components/synth/knob";
 import { Fader } from "@/components/synth/fader";
 import { PianoKeyboard } from "@/components/synth/piano-keyboard";
 import { WaveformSelect } from "@/components/synth/waveform-select";
 import { WaveformCanvas } from "../waveform-canvas";
+import { SpectrumCanvas } from "../spectrum-canvas";
 import { SynthShell } from "@/components/synths/shared/synth-shell";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { Synth3Engine } from "./engine";
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+const KEY_NOTE_MAP: Record<string, [string, number]> = {
+  a: ["C", 0],  w: ["C#", 0], s: ["D", 0],  e: ["D#", 0],
+  d: ["E", 0],  f: ["F", 0],  t: ["F#", 0], g: ["G", 0],
+  y: ["G#", 0], h: ["A", 0],  u: ["A#", 0], j: ["B", 0],
+  k: ["C", 1],  o: ["C#", 1], l: ["D", 1],  p: ["D#", 1],
+  ";": ["E", 1],
+};
 
 const THEME = { bg: "var(--background)", border: "var(--border)", panel: "var(--card)" };
 
@@ -37,6 +48,77 @@ const SUBLABEL: React.CSSProperties = {
   color: "var(--muted-foreground)",
   marginBottom: 6,
 };
+
+interface EnvCurveProps {
+  attack: number; decay: number; sustainLevel: number; release: number;
+  noteOnMs: number | null; noteOffMs: number | null;
+  width?: number; height?: number;
+}
+
+function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOffMs, width = 210, height = 78 }: EnvCurveProps) {
+  const W = width, H = height;
+  const top = 5, bot = H - 5;
+  const maxT = Math.max(attack + decay + release, 2);
+  const aX   = (attack / maxT) * (W * 0.65);
+  const dX   = aX + (decay / maxT) * (W * 0.65);
+  const sX   = dX + W * 0.16;
+  const rEnd = Math.min(sX + (release / maxT) * (W * 0.65), W - 4);
+  const susY = top + (1 - sustainLevel) * (bot - top);
+  const d    = `M 0 ${bot} L ${aX} ${top} L ${dX} ${susY} L ${sX} ${susY} L ${rEnd} ${bot}`;
+
+  const [dot, setDot] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: bot, visible: false });
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (noteOnMs === null) {
+      setDot((p) => p.visible ? { ...p, visible: false } : p);
+      return;
+    }
+    const aMs = attack * 1000, dMs = decay * 1000, rMs = release * 1000;
+    const tick = () => {
+      const el = performance.now() - noteOnMs;
+      if (noteOffMs === null) {
+        if (el < aMs) {
+          const t = el / aMs;
+          setDot({ x: lerp(0, aX, t), y: lerp(bot, top, t), visible: true });
+        } else if (el < aMs + dMs) {
+          const t = (el - aMs) / dMs;
+          setDot({ x: lerp(aX, dX, t), y: lerp(top, susY, t), visible: true });
+        } else {
+          setDot({ x: sX, y: susY, visible: true });
+        }
+      } else {
+        const re = performance.now() - noteOffMs;
+        if (re < rMs) {
+          const t = re / rMs;
+          setDot({ x: lerp(sX, rEnd, t), y: lerp(susY, bot, t), visible: true });
+        } else {
+          setDot((p) => ({ ...p, visible: false }));
+          return;
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); };
+  }, [noteOnMs, noteOffMs, attack, decay, release, aX, dX, sX, rEnd, top, bot, susY]);
+
+  return (
+    <svg width={W} height={H} style={{ display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id="env3-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.03" />
+        </linearGradient>
+      </defs>
+      <path d={`${d} L ${rEnd} ${bot} Z`} fill="url(#env3-grad)" />
+      <path d={d} fill="none" stroke="var(--primary)" strokeWidth={1.5} strokeLinejoin="round" />
+      {dot.visible && (
+        <circle cx={dot.x} cy={dot.y} r={4} fill="var(--primary)" opacity={0.9} />
+      )}
+    </svg>
+  );
+}
 
 function FilterTypeSelect({ value, onChange }: { value: BiquadFilterType; onChange: (v: BiquadFilterType) => void }) {
   const options: BiquadFilterType[] = ["lowpass", "highpass", "bandpass"];
@@ -96,16 +178,61 @@ export default function Synth3Page() {
   const [lfoDepth, setLfoDepth] = useState(30);
   const [lfoRoute, setLfoRoute] = useState<"pitch" | "filter">("pitch");
 
+  const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
+  const [noteOnMs, setNoteOnMs] = useState<number | null>(null);
+  const [noteOffMs, setNoteOffMs] = useState<number | null>(null);
+  const [volume, setVolume] = useState(0.8);
+  const [startOctave, setStartOctave] = useState(3);
+  const startOctaveRef = useRef(startOctave);
+  useEffect(() => { startOctaveRef.current = startOctave; }, [startOctave]);
+
   useEffect(() => {
     engineRef.current = new Synth3Engine();
     return () => engineRef.current?.dispose();
   }, []);
 
-  const noteOn = useCallback((note: string, vel: number) => engineRef.current?.noteOn(note, vel), []);
-  const noteOff = useCallback((note: string) => engineRef.current?.noteOff(note), []);
-  const getWaveform = useCallback((): Float32Array => engineRef.current?.getWaveform() ?? new Float32Array(1024), []);
+  const noteOn = useCallback((note: string, vel: number) => {
+    engineRef.current?.noteOn(note, vel);
+    setActiveNotes((prev) => new Set(prev).add(note));
+    setNoteOnMs(performance.now());
+    setNoteOffMs(null);
+  }, []);
+
+  const noteOff = useCallback((note: string) => {
+    engineRef.current?.noteOff(note);
+    setActiveNotes((prev) => { const s = new Set(prev); s.delete(note); return s; });
+    setNoteOffMs(performance.now());
+  }, []);
+
+  const getWaveform = useCallback((): Float32Array => engineRef.current?.getWaveform() ?? new Float32Array(2048), []);
+  const getFFT = useCallback((): Float32Array => engineRef.current?.getFFT() ?? new Float32Array(1024), []);
 
   const e = engineRef.current;
+
+  useEffect(() => {
+    const pressed = new Set<string>();
+    const onDown = (ev: KeyboardEvent) => {
+      if (ev.repeat || ev.target instanceof HTMLInputElement) return;
+      const entry = KEY_NOTE_MAP[ev.key.toLowerCase()];
+      if (!entry) return;
+      const [name, octOffset] = entry;
+      const note = `${name}${startOctaveRef.current + octOffset}`;
+      if (pressed.has(ev.key)) return;
+      pressed.add(ev.key);
+      noteOn(note, 0.8);
+    };
+    const onUp = (ev: KeyboardEvent) => {
+      const entry = KEY_NOTE_MAP[ev.key.toLowerCase()];
+      if (!entry) return;
+      const [name, octOffset] = entry;
+      const note = `${name}${startOctaveRef.current + octOffset}`;
+      pressed.delete(ev.key);
+      noteOff(note);
+    };
+    window.addEventListener("keydown", onDown);
+    window.addEventListener("keyup", onUp);
+    return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
+  }, [noteOn, noteOff]);
 
   const header = (
     <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
@@ -113,7 +240,22 @@ export default function Synth3Page() {
       <p style={{ fontSize: 11, color: "var(--muted-foreground)", margin: "2px 0 8px" }}>
         Dual Osc · Filter · Dual ADSR · LFO
       </p>
-      <WaveformCanvas getWaveform={getWaveform} width={480} height={60} />
+      {isMobile ? (
+        <WaveformCanvas getWaveform={getWaveform} width={320} height={60} />
+      ) : (
+        <div style={{ display: "flex", gap: 12 }}>
+          <WaveformCanvas getWaveform={getWaveform} width={300} height={60} />
+          <SpectrumCanvas
+            getFFT={getFFT}
+            filterFreq={filterCutoff}
+            resonance={filterRes}
+            sampleRate={engineRef.current?.sampleRate ?? 44100}
+            fftSize={engineRef.current?.fftSize ?? 2048}
+            width={180}
+            height={60}
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -153,12 +295,24 @@ export default function Synth3Page() {
         </div>
 
         <div style={SECTION}>
-          <p style={LABEL}>Amp Env</p>
-          <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-            <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
-            <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
-            <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
-            <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <p style={{ ...LABEL, marginBottom: 0 }}>Amp Env</p>
+            <Knob value={volume} min={0} max={1} step={0.01} label="Vol" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+              <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
+              <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
+              <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
+              <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
+            </div>
+            <div style={{ background: "var(--background)", borderRadius: 6, padding: 4, border: "1px solid var(--border)" }}>
+              <EnvelopeCurve
+                attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR}
+                noteOnMs={noteOnMs} noteOffMs={noteOffMs}
+                width={130} height={60}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -201,13 +355,28 @@ export default function Synth3Page() {
 
   const keyboard = (
     <div style={{ padding: "8px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            onClick={() => setStartOctave((o) => Math.max(1, o - 1))}
+            style={{ padding: "2px 10px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--card)", color: "var(--muted-foreground)", fontSize: 14, cursor: "pointer" }}
+          >−</button>
+          <span style={{ fontSize: 11, color: "var(--muted-foreground)", alignSelf: "center" }}>Oct {startOctave}</span>
+          <button
+            onClick={() => setStartOctave((o) => Math.min(6, o + 1))}
+            style={{ padding: "2px 10px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--card)", color: "var(--muted-foreground)", fontSize: 14, cursor: "pointer" }}
+          >+</button>
+        </div>
+        <span style={{ fontSize: 10, color: "var(--muted-foreground)", opacity: 0.6 }}>QWERTY</span>
+      </div>
       <PianoKeyboard
         onNoteOn={noteOn}
         onNoteOff={noteOff}
-        startOctave={3}
+        startOctave={startOctave}
         octaves={isMobile ? 2 : 3}
         whiteKeyWidth={isMobile ? mobileKeyWidth : 24}
         whiteKeyHeight={isMobile ? 80 : 72}
+        activeNotes={activeNotes}
       />
     </div>
   );
