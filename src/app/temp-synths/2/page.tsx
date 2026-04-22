@@ -110,7 +110,7 @@ function EnvelopeCurve({ attack, release, sustainOn, noteOnMs, noteOffMs }: Enve
 
   useEffect(() => {
     if (noteOnMs === null) {
-      setDot((prev) => ({ ...prev, visible: false }));
+      setDot((prev) => prev.visible ? { ...prev, visible: false } : prev);
       return;
     }
 
