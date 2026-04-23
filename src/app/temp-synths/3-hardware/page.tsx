@@ -464,16 +464,16 @@ export default function Synth3HardwarePage() {
               {/* AMP ENV */}
               <div style={sectionPanel}>
                 <p style={sectionLabel}>Amp Env</p>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "flex-start" }}>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
-                    <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
-                    <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
-                    <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
-                  </div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
                   <div style={{ background: "#000", borderRadius: 3, padding: "4px 6px", border: "1px solid #1e1e1e" }}>
-                    <EnvelopeCurve attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR} noteOnMs={noteOnMs} noteOffMs={noteOffMs} />
+                    <EnvelopeCurve attack={ampA} decay={ampD} sustainLevel={ampS} release={ampR} noteOnMs={noteOnMs} noteOffMs={noteOffMs} width={170} height={56} />
                   </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                  <Fader value={ampA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setAmpA(v); e?.setAmpAttack(v); }} />
+                  <Fader value={ampD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setAmpD(v); e?.setAmpDecay(v); }} />
+                  <Fader value={ampS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setAmpS(v); e?.setAmpSustain(v); }} />
+                  <Fader value={ampR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setAmpR(v); e?.setAmpRelease(v); }} />
                 </div>
               </div>
             </div>
@@ -514,12 +514,12 @@ export default function Synth3HardwarePage() {
                 <button style={{ border: "none", borderRight: "1px solid #1a1a1a", background: "transparent", color: startOctave <= 1 ? "#222" : "#666", fontSize: 12, padding: "0 16px", cursor: startOctave <= 1 ? "default" : "pointer", fontFamily: "Arial" }}
                   onClick={() => setStartOctave((o) => Math.max(1, o - 1))} disabled={startOctave <= 1}>◀</button>
                 <span style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#2a2a2a", fontSize: 9, fontFamily: "Arial", letterSpacing: "0.3em" }}>
-                  OCT {startOctave}–{startOctave + 2}
+                  OCT {startOctave}–{startOctave + 3}
                 </span>
                 <button style={{ border: "none", borderLeft: "1px solid #1a1a1a", background: "transparent", color: startOctave >= 5 ? "#222" : "#666", fontSize: 12, padding: "0 16px", cursor: startOctave >= 5 ? "default" : "pointer", fontFamily: "Arial" }}
                   onClick={() => setStartOctave((o) => Math.min(5, o + 1))} disabled={startOctave >= 5}>▶</button>
               </div>
-              <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={startOctave} octaves={3} activeNotes={activeNotes} whiteKeyWidth={28} whiteKeyHeight={90} />
+              <PianoKeyboard onNoteOn={noteOn} onNoteOff={noteOff} startOctave={startOctave} octaves={4} activeNotes={activeNotes} whiteKeyWidth={28} whiteKeyHeight={90} />
             </div>
           </div>
         </div>
