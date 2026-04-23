@@ -47,7 +47,9 @@ export class Synth3Engine {
   lfoRate = 4;
   lfoDepth = 30;
   lfoRoute: "pitch" | "filter" = "pitch";
-
+  lfoEnabled = true;
+  filterEnvEnabled = true;
+  polyEnabled = false;
 
   constructor() {
     this.ctx = getAudioContext();
@@ -160,13 +162,15 @@ export class Synth3Engine {
     );
 
     // Filter envelope
-    const base = this.filterCutoff;
-    const peak = base + this.filterEnvAmount;
-    const sus = base + this.filterEnvAmount * this.filterEnvSustain;
-    this.filter.frequency.cancelScheduledValues(now);
-    this.filter.frequency.setValueAtTime(base, now);
-    this.filter.frequency.linearRampToValueAtTime(peak, now + this.filterEnvAttack);
-    this.filter.frequency.linearRampToValueAtTime(sus, now + this.filterEnvAttack + this.filterEnvDecay);
+    if (this.filterEnvEnabled) {
+      const base = this.filterCutoff;
+      const peak = base + this.filterEnvAmount;
+      const sus = base + this.filterEnvAmount * this.filterEnvSustain;
+      this.filter.frequency.cancelScheduledValues(now);
+      this.filter.frequency.setValueAtTime(base, now);
+      this.filter.frequency.linearRampToValueAtTime(peak, now + this.filterEnvAttack);
+      this.filter.frequency.linearRampToValueAtTime(sus, now + this.filterEnvAttack + this.filterEnvDecay);
+    }
   }
 
   noteOff(_note: string): void {
@@ -177,10 +181,12 @@ export class Synth3Engine {
     this.ampEnvGain.gain.linearRampToValueAtTime(0, now + this.ampRelease);
 
     // Filter release
-    this.filter.frequency.cancelAndHoldAtTime(now);
-    this.filter.frequency.linearRampToValueAtTime(this.filterCutoff, now + this.filterEnvRelease);
+    if (this.filterEnvEnabled) {
+      this.filter.frequency.cancelAndHoldAtTime(now);
+      this.filter.frequency.linearRampToValueAtTime(this.filterCutoff, now + this.filterEnvRelease);
+    }
 
-    const stopAt = now + Math.max(this.ampRelease, this.filterEnvRelease) + 0.05;
+    const stopAt = now + this.ampRelease + (this.filterEnvEnabled ? Math.max(0, this.filterEnvRelease - this.ampRelease) : 0) + 0.05;
     this.osc1?.stop(stopAt);
     this.osc2?.stop(stopAt);
     this.osc1 = null;
@@ -286,6 +292,34 @@ export class Synth3Engine {
 
   setVolume(v: number): void {
     this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
+  }
+
+  getFilterFreq(): number {
+    return this.filter.frequency.value;
+  }
+
+  setLfoEnabled(on: boolean): void {
+    this.lfoEnabled = on;
+    if (on) {
+      this.setLfoDepth(this.lfoDepth);
+      const now = this.ctx.currentTime;
+      if (this.lfoRoute === "pitch") {
+        this.lfoPitchGate.gain.setTargetAtTime(1, now, 0.02);
+      } else {
+        this.lfoFilterGate.gain.setTargetAtTime(1, now, 0.02);
+      }
+    } else {
+      this.lfoDepthGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
+    }
+  }
+
+  setFilterEnvEnabled(on: boolean): void {
+    this.filterEnvEnabled = on;
+    if (!on) {
+      const now = this.ctx.currentTime;
+      this.filter.frequency.cancelScheduledValues(now);
+      this.filter.frequency.setTargetAtTime(this.filterCutoff, now, 0.01);
+    }
   }
 
   dispose(): void {
