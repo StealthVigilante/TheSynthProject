@@ -177,6 +177,9 @@ export default function Synth3Page() {
   const [lfoRate, setLfoRate] = useState(4);
   const [lfoDepth, setLfoDepth] = useState(30);
   const [lfoRoute, setLfoRoute] = useState<"pitch" | "filter">("pitch");
+  const [lfoEnabled, setLfoEnabled] = useState(true);
+  const [filterEnvEnabled, setFilterEnvEnabled] = useState(true);
+  const [polyEnabled, setPolyEnabled] = useState(false);
 
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
   const [noteOnMs, setNoteOnMs] = useState<number | null>(null);
@@ -206,6 +209,7 @@ export default function Synth3Page() {
 
   const getWaveform = useCallback((): Float32Array => engineRef.current?.getWaveform() ?? new Float32Array(2048), []);
   const getFFT = useCallback((): Float32Array => engineRef.current?.getFFT() ?? new Float32Array(1024), []);
+  const getFilterFreq = useCallback((): number => engineRef.current?.getFilterFreq() ?? filterCutoff, [filterCutoff]);
 
   const e = engineRef.current;
 
@@ -240,6 +244,18 @@ export default function Synth3Page() {
       <p style={{ fontSize: 11, color: "var(--muted-foreground)", margin: "2px 0 8px" }}>
         Dual Osc · Filter · Dual ADSR · LFO
       </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <button
+          onClick={() => { const next = !polyEnabled; setPolyEnabled(next); e?.setPolyEnabled(next); }}
+          style={{
+            padding: "3px 10px", borderRadius: 6, border: "1px solid",
+            borderColor: polyEnabled ? "var(--primary)" : "var(--border)",
+            background: polyEnabled ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+            color: polyEnabled ? "var(--foreground)" : "var(--muted-foreground)",
+            fontSize: 10, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em",
+          }}
+        >{polyEnabled ? "POLY" : "MONO"}</button>
+      </div>
       {isMobile ? (
         <WaveformCanvas getWaveform={getWaveform} width={320} height={60} />
       ) : (
@@ -253,6 +269,7 @@ export default function Synth3Page() {
             fftSize={engineRef.current?.fftSize ?? 2048}
             width={180}
             height={60}
+            getFilterFreq={getFilterFreq}
           />
         </div>
       )}
@@ -291,6 +308,19 @@ export default function Synth3Page() {
             <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
             <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
             <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+            <span style={{ fontSize: 9, color: "var(--muted-foreground)", letterSpacing: "0.12em" }}>FILTER ENV</span>
+            <button
+              onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
+              style={{
+                padding: "3px 8px", borderRadius: 6, border: "1px solid",
+                borderColor: filterEnvEnabled ? "var(--primary)" : "var(--border)",
+                background: filterEnvEnabled ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+                color: filterEnvEnabled ? "var(--foreground)" : "var(--muted-foreground)",
+                fontSize: 10, fontWeight: 700, cursor: "pointer",
+              }}
+            >{filterEnvEnabled ? "ON" : "OFF"}</button>
           </div>
         </div>
 
@@ -348,6 +378,16 @@ export default function Synth3Page() {
               ))}
             </div>
           </div>
+          <button
+            onClick={() => { const next = !lfoEnabled; setLfoEnabled(next); e?.setLfoEnabled(next); }}
+            style={{
+              padding: "4px 10px", borderRadius: 6, border: "1px solid",
+              borderColor: lfoEnabled ? "var(--primary)" : "var(--border)",
+              background: lfoEnabled ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+              color: lfoEnabled ? "var(--foreground)" : "var(--muted-foreground)",
+              fontSize: 10, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em",
+            }}
+          >{lfoEnabled ? "ON" : "OFF"}</button>
         </div>
       </div>
     </div>
