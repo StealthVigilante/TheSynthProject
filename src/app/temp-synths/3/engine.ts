@@ -21,6 +21,7 @@ export class Synth3Engine {
   private lfoDepthGain: GainNode;
   private lfoPitchGate: GainNode;  // → osc.detune
   private lfoFilterGate: GainNode; // → filter.frequency
+  private lfoStartTime = 0;
 
   // Poly voice pool
   private readonly MAX_VOICES = 4;
@@ -117,6 +118,7 @@ export class Synth3Engine {
     this.lfoDepthGain.connect(this.lfoFilterGate);
     this.lfoFilterGate.connect(this.filter.frequency);
 
+    this.lfoStartTime = this.ctx.currentTime;
     this.lfo.start();
 
     // Pre-create poly voice nodes; all ampEnv → filter
@@ -410,7 +412,14 @@ export class Synth3Engine {
   }
 
   getFilterFreq(): number {
-    return this.filter.frequency.value;
+    const base = this.filter.frequency.value;
+    if (this.lfoEnabled && this.lfoRoute === "filter") {
+      const t = this.ctx.currentTime - this.lfoStartTime;
+      const phase = 2 * Math.PI * this.lfoRate * t;
+      const lfoVal = this.lfoType === "square" ? Math.sign(Math.sin(phase)) : Math.sin(phase);
+      return base + lfoVal * this.lfoDepth * 20;
+    }
+    return base;
   }
 
   setLfoEnabled(on: boolean): void {

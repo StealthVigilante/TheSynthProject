@@ -293,18 +293,8 @@ export default function Synth3HardwarePage() {
               <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
               <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
             </div>
-            <p style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em", margin: "12px 0 8px" }}>FILTER ENV</p>
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-              <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
-            </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
-              <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
-              <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
-              <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>FILTER ENV</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "12px 0 8px" }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em" }}>FILTER ENV</span>
               <button
                 onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
                 style={{
@@ -316,6 +306,15 @@ export default function Synth3HardwarePage() {
                   boxShadow: filterEnvEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
                 }}
               >{filterEnvEnabled ? "ON" : "OFF"}</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+              <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+              <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
+              <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
+              <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
+              <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
             </div>
           </div>
         )}
@@ -503,18 +502,8 @@ export default function Synth3HardwarePage() {
 
               {/* FILTER ENV */}
               <div style={sectionPanel}>
-                <p style={sectionLabel}>Filter Env</p>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-                  <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
-                </div>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                  <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
-                  <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
-                  <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
-                  <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                  <span style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>ENV</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, borderBottom: "1px solid #1a1a1a", paddingBottom: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", color: "#404040", fontFamily: "Arial", textTransform: "uppercase" }}>Filter Env</span>
                   <button
                     onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
                     style={{
@@ -526,6 +515,15 @@ export default function Synth3HardwarePage() {
                       boxShadow: filterEnvEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
                     }}
                   >{filterEnvEnabled ? "ON" : "OFF"}</button>
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                  <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                  <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
+                  <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
+                  <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
+                  <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
                 </div>
               </div>
 

@@ -299,18 +299,8 @@ export default function Synth3Page() {
             <Knob value={filterCutoff} min={80} max={18000} step={10} label="Cutoff" unit="Hz" onChange={(v) => { setFilterCutoff(v); e?.setFilterCutoff(v); }} size="sm" />
             <Knob value={filterRes} min={0.1} max={20} step={0.1} label="Res" unit="Q" onChange={(v) => { setFilterRes(v); e?.setFilterResonance(v); }} size="sm" />
           </div>
-          <p style={{ ...SUBLABEL, marginTop: 12 }}>Filter Env</p>
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
-          </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 8, justifyContent: "center" }}>
-            <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
-            <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
-            <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
-            <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-            <span style={{ fontSize: 9, color: "var(--muted-foreground)", letterSpacing: "0.12em" }}>FILTER ENV</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+            <p style={{ ...SUBLABEL, marginBottom: 0 }}>Filter Env</p>
             <button
               onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
               style={{
@@ -321,6 +311,15 @@ export default function Synth3Page() {
                 fontSize: 10, fontWeight: 700, cursor: "pointer",
               }}
             >{filterEnvEnabled ? "ON" : "OFF"}</button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+            <Knob value={fEnvAmt} min={0} max={10000} step={50} label="Amount" unit="Hz" onChange={(v) => { setFEnvAmt(v); e?.setFilterEnvAmount(v); }} size="sm" />
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 8, justifyContent: "center" }}>
+            <Fader value={fEnvA} min={0.001} max={2} step={0.001} label="A" unit="s" onChange={(v) => { setFEnvA(v); e?.setFilterEnvAttack(v); }} />
+            <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
+            <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
+            <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
           </div>
         </div>
 
