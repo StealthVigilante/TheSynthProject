@@ -154,6 +154,9 @@ export default function Synth3HardwarePage() {
   const [lfoRate, setLfoRate] = useState(4);
   const [lfoDepth, setLfoDepth] = useState(30);
   const [lfoRoute, setLfoRoute] = useState<"pitch" | "filter">("pitch");
+  const [lfoEnabled, setLfoEnabled] = useState(true);
+  const [filterEnvEnabled, setFilterEnvEnabled] = useState(true);
+  const [polyEnabled, setPolyEnabled] = useState(false);
 
   const [volume, setVolume] = useState(0.8);
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
@@ -187,6 +190,7 @@ export default function Synth3HardwarePage() {
 
   const getWaveform = useCallback((): Float32Array => engineRef.current?.getWaveform() ?? new Float32Array(2048), []);
   const getFFT = useCallback((): Float32Array => engineRef.current?.getFFT() ?? new Float32Array(1024), []);
+  const getFilterFreq = useCallback((): number => engineRef.current?.getFilterFreq() ?? filterCutoff, [filterCutoff]);
 
   const e = engineRef.current;
 
@@ -242,10 +246,20 @@ export default function Synth3HardwarePage() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#ffffff", fontFamily: "Arial" }}>The Classic</p>
         <p style={{ fontSize: 9, color: "#404040", margin: "1px 0 0" }}>Hardware Edition</p>
+        <button
+          onClick={() => { const next = !polyEnabled; setPolyEnabled(next); e?.setPolyEnabled(next); }}
+          style={{
+            marginTop: 4, padding: "2px 8px", borderRadius: 3, border: "1px solid",
+            borderColor: polyEnabled ? ACCENT : "#2a2a2a",
+            background: polyEnabled ? "#001a22" : "#0a0a0a",
+            color: polyEnabled ? ACCENT : "#404040",
+            fontSize: 8, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.15em",
+          }}
+        >{polyEnabled ? "POLY" : "MONO"}</button>
       </div>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
-        <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={100} height={36} lineColor={ACCENT} />
+        <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={100} height={36} lineColor={ACCENT} getFilterFreq={getFilterFreq} />
         <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
       </div>
     </div>
@@ -288,6 +302,19 @@ export default function Synth3HardwarePage() {
               <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
               <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
             </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>FILTER ENV</span>
+              <button
+                onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
+                style={{
+                  padding: "3px 12px", borderRadius: 3, border: "1px solid",
+                  borderColor: filterEnvEnabled ? ACCENT : "#2a2a2a",
+                  background: filterEnvEnabled ? "#001a22" : "#0a0a0a",
+                  color: filterEnvEnabled ? ACCENT : "#404040",
+                  fontSize: 10, cursor: "pointer",
+                }}
+              >{filterEnvEnabled ? "ON" : "OFF"}</button>
+            </div>
           </div>
         )}
         {activeTab === "env" && (
@@ -329,6 +356,19 @@ export default function Synth3HardwarePage() {
                   }}>{r}</button>
                 ))}
               </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>LFO</span>
+              <button
+                onClick={() => { const next = !lfoEnabled; setLfoEnabled(next); e?.setLfoEnabled(next); }}
+                style={{
+                  padding: "3px 12px", borderRadius: 3, border: "1px solid",
+                  borderColor: lfoEnabled ? ACCENT : "#2a2a2a",
+                  background: lfoEnabled ? "#001a22" : "#0a0a0a",
+                  color: lfoEnabled ? ACCENT : "#404040",
+                  fontSize: 10, cursor: "pointer",
+                }}
+              >{lfoEnabled ? "ON" : "OFF"}</button>
             </div>
           </div>
         )}
@@ -409,6 +449,17 @@ export default function Synth3HardwarePage() {
               <div>
                 <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.3em", color: "#ffffff", fontFamily: "Arial", margin: 0 }}>THE CLASSIC</p>
                 <p style={{ fontSize: 7, color: "#404040", letterSpacing: "0.25em", margin: "3px 0 0", fontFamily: "Arial" }}>SYNTHESIZER · MK III</p>
+                <button
+                  onClick={() => { const next = !polyEnabled; setPolyEnabled(next); e?.setPolyEnabled(next); }}
+                  style={{
+                    marginTop: 6, padding: "2px 8px", borderRadius: 3, border: "1px solid",
+                    borderColor: polyEnabled ? ACCENT : "#2a2a2a",
+                    background: polyEnabled ? "#001a22" : "#0a0a0a",
+                    color: polyEnabled ? ACCENT : "#404040",
+                    fontSize: 8, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.15em",
+                    boxShadow: polyEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                  }}
+                >{polyEnabled ? "POLY" : "MONO"}</button>
               </div>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <div style={{ background: "#000", border: "1px solid #1e1e1e", borderRadius: 3, padding: "5px 12px" }}>
@@ -417,7 +468,7 @@ export default function Synth3HardwarePage() {
                   </span>
                 </div>
                 <WaveformCanvas getWaveform={getWaveform} width={200} height={48} />
-                <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={200} height={48} lineColor={ACCENT} />
+                <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={200} height={48} lineColor={ACCENT} getFilterFreq={getFilterFreq} />
               </div>
               <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
             </div>
@@ -458,6 +509,20 @@ export default function Synth3HardwarePage() {
                   <Fader value={fEnvD} min={0.01} max={3} step={0.01} label="D" unit="s" onChange={(v) => { setFEnvD(v); e?.setFilterEnvDecay(v); }} />
                   <Fader value={fEnvS} min={0} max={1} step={0.01} label="S" onChange={(v) => { setFEnvS(v); e?.setFilterEnvSustain(v); }} />
                   <Fader value={fEnvR} min={0.01} max={4} step={0.01} label="R" unit="s" onChange={(v) => { setFEnvR(v); e?.setFilterEnvRelease(v); }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                  <span style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.15em" }}>ENV</span>
+                  <button
+                    onClick={() => { const next = !filterEnvEnabled; setFilterEnvEnabled(next); e?.setFilterEnvEnabled(next); }}
+                    style={{
+                      padding: "2px 8px", borderRadius: 3, border: "1px solid",
+                      borderColor: filterEnvEnabled ? ACCENT : "#2a2a2a",
+                      background: filterEnvEnabled ? "#001a22" : "#0a0a0a",
+                      color: filterEnvEnabled ? ACCENT : "#404040",
+                      fontSize: 9, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.1em",
+                      boxShadow: filterEnvEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                    }}
+                  >{filterEnvEnabled ? "ON" : "OFF"}</button>
                 </div>
               </div>
 
@@ -501,6 +566,17 @@ export default function Synth3HardwarePage() {
                     ))}
                   </div>
                 </div>
+                <button
+                  onClick={() => { const next = !lfoEnabled; setLfoEnabled(next); e?.setLfoEnabled(next); }}
+                  style={{
+                    padding: "3px 10px", borderRadius: 3, border: "1px solid",
+                    borderColor: lfoEnabled ? ACCENT : "#2a2a2a",
+                    background: lfoEnabled ? "#001a22" : "#0a0a0a",
+                    color: lfoEnabled ? ACCENT : "#404040",
+                    fontSize: 9, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.15em",
+                    boxShadow: lfoEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                  }}
+                >{lfoEnabled ? "ON" : "OFF"}</button>
               </div>
             </div>
 
