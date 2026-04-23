@@ -303,11 +303,8 @@ export class Synth3Engine {
     if (on) {
       this.setLfoDepth(this.lfoDepth);
       const now = this.ctx.currentTime;
-      if (this.lfoRoute === "pitch") {
-        this.lfoPitchGate.gain.setTargetAtTime(1, now, 0.02);
-      } else {
-        this.lfoFilterGate.gain.setTargetAtTime(1, now, 0.02);
-      }
+      this.lfoPitchGate.gain.setTargetAtTime(this.lfoRoute === "pitch" ? 1 : 0, now, 0.02);
+      this.lfoFilterGate.gain.setTargetAtTime(this.lfoRoute === "filter" ? 1 : 0, now, 0.02);
     } else {
       this.lfoDepthGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
     }
