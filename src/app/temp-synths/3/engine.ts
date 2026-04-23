@@ -338,7 +338,9 @@ export class Synth3Engine {
       voice.ampEnv.gain.cancelAndHoldAtTime(now);
       voice.ampEnv.gain.linearRampToValueAtTime(0, now + 0.02);
       try { voice.osc1?.stop(now + 0.02); } catch { /* ok */ }
+      voice.osc1?.disconnect();
       try { voice.osc2?.stop(now + 0.02); } catch { /* ok */ }
+      voice.osc2?.disconnect();
       voice.osc1 = null;
       voice.osc2 = null;
     }
@@ -399,7 +401,9 @@ export class Synth3Engine {
 
     const stopAt = now + this.ampRelease + 0.05;
     try { voice.osc1?.stop(stopAt); } catch { /* ok */ }
+    voice.osc1?.disconnect();
     try { voice.osc2?.stop(stopAt); } catch { /* ok */ }
+    voice.osc2?.disconnect();
     voice.osc1 = null;
     voice.osc2 = null;
     voice.note = null;
@@ -439,7 +443,9 @@ export class Synth3Engine {
         v.ampEnv.gain.cancelAndHoldAtTime(now);
         v.ampEnv.gain.linearRampToValueAtTime(0, now + 0.05);
         try { v.osc1?.stop(now + 0.05); } catch { /* ok */ }
+        v.osc1?.disconnect();
         try { v.osc2?.stop(now + 0.05); } catch { /* ok */ }
+        v.osc2?.disconnect();
         v.osc1 = null;
         v.osc2 = null;
         v.note = null;
