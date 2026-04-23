@@ -22,6 +22,18 @@ export class Synth3Engine {
   private lfoPitchGate: GainNode;  // → osc.detune
   private lfoFilterGate: GainNode; // → filter.frequency
 
+  // Poly voice pool
+  private readonly MAX_VOICES = 4;
+  private polyVoices: Array<{
+    osc1: OscillatorNode | null;
+    osc2: OscillatorNode | null;
+    osc1Mix: GainNode;
+    osc2Mix: GainNode;
+    ampEnv: GainNode;
+    note: string | null;
+    startTime: number;
+  }> = [];
+
   // Params
   osc1Type: OscillatorType = "sawtooth";
   osc2Type: OscillatorType = "sawtooth";
@@ -107,6 +119,20 @@ export class Synth3Engine {
 
     this.lfo.start();
 
+    // Pre-create poly voice nodes; all ampEnv → filter
+    for (let i = 0; i < this.MAX_VOICES; i++) {
+      const osc1Mix = this.ctx.createGain();
+      osc1Mix.gain.value = 1 - this.oscMix;
+      const osc2Mix = this.ctx.createGain();
+      osc2Mix.gain.value = this.oscMix;
+      const ampEnv = this.ctx.createGain();
+      ampEnv.gain.value = 0;
+      osc1Mix.connect(ampEnv);
+      osc2Mix.connect(ampEnv);
+      ampEnv.connect(this.filter);
+      this.polyVoices.push({ osc1: null, osc2: null, osc1Mix, osc2Mix, ampEnv, note: null, startTime: 0 });
+    }
+
     // Main signal chain
     this.osc1Gain.connect(this.filter);
     this.osc2Gain.connect(this.filter);
@@ -120,6 +146,7 @@ export class Synth3Engine {
 
   noteOn(note: string, velocity = 0.8): void {
     if (this.ctx.state === "suspended") void this.ctx.resume();
+    if (this.polyEnabled) { this.polyNoteOn(note, velocity); return; }
     // Stop previous oscs cleanly
     try { this.osc1?.stop(); } catch { /* already stopped */ }
     this.osc1?.disconnect();
@@ -174,6 +201,7 @@ export class Synth3Engine {
   }
 
   noteOff(_note: string): void {
+    if (this.polyEnabled) { this.polyNoteOff(_note); return; }
     const now = this.ctx.currentTime;
 
     // Amp release
@@ -212,6 +240,10 @@ export class Synth3Engine {
     this.oscMix = mix;
     this.osc1Gain.gain.setTargetAtTime(1 - mix, this.ctx.currentTime, 0.01);
     this.osc2Gain.gain.setTargetAtTime(mix, this.ctx.currentTime, 0.01);
+    for (const v of this.polyVoices) {
+      v.osc1Mix.gain.setTargetAtTime(1 - mix, this.ctx.currentTime, 0.01);
+      v.osc2Mix.gain.setTargetAtTime(mix, this.ctx.currentTime, 0.01);
+    }
   }
 
   setFilterType(t: BiquadFilterType): void {
@@ -294,6 +326,85 @@ export class Synth3Engine {
     this.masterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
   }
 
+  private polyNoteOn(note: string, velocity: number): void {
+    const now = this.ctx.currentTime;
+    const freq = noteNameToFreq(note);
+
+    // Find free voice or steal oldest
+    let voice = this.polyVoices.find(v => v.note === null);
+    if (!voice) {
+      voice = this.polyVoices.reduce((a, b) => a.startTime < b.startTime ? a : b);
+      // Quick release on stolen voice
+      voice.ampEnv.gain.cancelAndHoldAtTime(now);
+      voice.ampEnv.gain.linearRampToValueAtTime(0, now + 0.02);
+      try { voice.osc1?.stop(now + 0.02); } catch { /* ok */ }
+      try { voice.osc2?.stop(now + 0.02); } catch { /* ok */ }
+      voice.osc1 = null;
+      voice.osc2 = null;
+    }
+
+    const osc1 = this.ctx.createOscillator();
+    osc1.type = this.osc1Type;
+    osc1.frequency.value = freq;
+    osc1.connect(voice.osc1Mix);
+
+    const osc2 = this.ctx.createOscillator();
+    osc2.type = this.osc2Type;
+    osc2.frequency.value = freq;
+    osc2.detune.value = this.osc2Detune;
+    osc2.connect(voice.osc2Mix);
+
+    if (this.lfoEnabled && this.lfoRoute === "pitch") {
+      this.lfoPitchGate.connect(osc1.detune);
+      this.lfoPitchGate.connect(osc2.detune);
+    }
+
+    osc1.start(now);
+    osc2.start(now);
+    voice.osc1 = osc1;
+    voice.osc2 = osc2;
+    voice.note = note;
+    voice.startTime = now;
+
+    // Amp envelope
+    voice.ampEnv.gain.cancelScheduledValues(now);
+    voice.ampEnv.gain.setValueAtTime(0, now);
+    voice.ampEnv.gain.linearRampToValueAtTime(velocity, now + this.ampAttack);
+    voice.ampEnv.gain.linearRampToValueAtTime(velocity * this.ampSustain, now + this.ampAttack + this.ampDecay);
+
+    // Filter envelope (shared — retrigger on each new note)
+    if (this.filterEnvEnabled) {
+      const base = this.filterCutoff;
+      const peak = base + this.filterEnvAmount;
+      const sus = base + this.filterEnvAmount * this.filterEnvSustain;
+      this.filter.frequency.cancelScheduledValues(now);
+      this.filter.frequency.setValueAtTime(base, now);
+      this.filter.frequency.linearRampToValueAtTime(peak, now + this.filterEnvAttack);
+      this.filter.frequency.linearRampToValueAtTime(sus, now + this.filterEnvAttack + this.filterEnvDecay);
+    }
+  }
+
+  private polyNoteOff(note: string): void {
+    const voice = this.polyVoices.find(v => v.note === note);
+    if (!voice) return;
+    const now = this.ctx.currentTime;
+
+    voice.ampEnv.gain.cancelAndHoldAtTime(now);
+    voice.ampEnv.gain.linearRampToValueAtTime(0, now + this.ampRelease);
+
+    if (this.filterEnvEnabled) {
+      this.filter.frequency.cancelAndHoldAtTime(now);
+      this.filter.frequency.linearRampToValueAtTime(this.filterCutoff, now + this.filterEnvRelease);
+    }
+
+    const stopAt = now + this.ampRelease + 0.05;
+    try { voice.osc1?.stop(stopAt); } catch { /* ok */ }
+    try { voice.osc2?.stop(stopAt); } catch { /* ok */ }
+    voice.osc1 = null;
+    voice.osc2 = null;
+    voice.note = null;
+  }
+
   getFilterFreq(): number {
     return this.filter.frequency.value;
   }
@@ -319,6 +430,23 @@ export class Synth3Engine {
     }
   }
 
+  setPolyEnabled(on: boolean): void {
+    this.polyEnabled = on;
+    if (!on) {
+      const now = this.ctx.currentTime;
+      for (const v of this.polyVoices) {
+        if (v.note === null) continue;
+        v.ampEnv.gain.cancelAndHoldAtTime(now);
+        v.ampEnv.gain.linearRampToValueAtTime(0, now + 0.05);
+        try { v.osc1?.stop(now + 0.05); } catch { /* ok */ }
+        try { v.osc2?.stop(now + 0.05); } catch { /* ok */ }
+        v.osc1 = null;
+        v.osc2 = null;
+        v.note = null;
+      }
+    }
+  }
+
   dispose(): void {
     this.osc1?.stop();
     this.osc1?.disconnect();
@@ -337,5 +465,14 @@ export class Synth3Engine {
     this.analyser.disconnect();
     this.compressor.disconnect();
     this.masterGain.disconnect();
+    for (const v of this.polyVoices) {
+      try { v.osc1?.stop(); } catch { /* ok */ }
+      v.osc1?.disconnect();
+      try { v.osc2?.stop(); } catch { /* ok */ }
+      v.osc2?.disconnect();
+      v.osc1Mix.disconnect();
+      v.osc2Mix.disconnect();
+      v.ampEnv.disconnect();
+    }
   }
 }
