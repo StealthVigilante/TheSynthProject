@@ -11,6 +11,7 @@ interface SpectrumCanvasProps {
   width?: number;
   height?: number;
   lineColor?: string;
+  getFilterFreq?: () => number;
 }
 
 const MIN_FREQ = 20;
@@ -43,6 +44,7 @@ export function SpectrumCanvas({
   width = 320,
   height = 80,
   lineColor = "#f97316",
+  getFilterFreq,
 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
@@ -50,11 +52,13 @@ export function SpectrumCanvas({
   const filterFreqRef = useRef(filterFreq);
   const resonanceRef = useRef(resonance);
   const lineColorRef = useRef(lineColor);
+  const getFilterFreqRef = useRef(getFilterFreq);
 
   useEffect(() => { getRef.current = getFFT; });
   useEffect(() => { filterFreqRef.current = filterFreq; }, [filterFreq]);
   useEffect(() => { resonanceRef.current = resonance; }, [resonance]);
   useEffect(() => { lineColorRef.current = lineColor; }, [lineColor]);
+  useEffect(() => { getFilterFreqRef.current = getFilterFreq; }, [getFilterFreq]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,7 +94,8 @@ export function SpectrumCanvas({
       ctx.beginPath();
       for (let x = 0; x < width; x++) {
         const freq = MIN_FREQ * Math.pow(10, (x / width) * LOG_RANGE);
-        const db = biquadLowpassMagDb(freq, filterFreqRef.current, resonanceRef.current, sampleRate);
+        const fc = getFilterFreqRef.current ? getFilterFreqRef.current() : filterFreqRef.current;
+        const db = biquadLowpassMagDb(freq, fc, resonanceRef.current, sampleRate);
         const clamped = Math.max(-EQ_HALF, Math.min(EQ_HALF, db));
         const y = height / 2 - (clamped / EQ_HALF) * (height / 2);
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
