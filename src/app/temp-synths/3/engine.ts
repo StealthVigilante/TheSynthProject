@@ -445,8 +445,15 @@ export class Synth3Engine {
 
   setPolyEnabled(on: boolean): void {
     this.polyEnabled = on;
-    if (!on) {
-      const now = this.ctx.currentTime;
+    const now = this.ctx.currentTime;
+    if (on) {
+      // Poly voices have per-voice amp envelopes — make shared ampEnvGain a passthrough
+      this.ampEnvGain.gain.cancelScheduledValues(now);
+      this.ampEnvGain.gain.setTargetAtTime(1, now, 0.01);
+    } else {
+      // Return shared gate to closed state (mono noteOn will open it)
+      this.ampEnvGain.gain.cancelScheduledValues(now);
+      this.ampEnvGain.gain.setTargetAtTime(0, now, 0.01);
       for (const v of this.polyVoices) {
         if (v.note === null) continue;
         v.ampEnv.gain.cancelAndHoldAtTime(now);
