@@ -254,6 +254,7 @@ export default function Synth3HardwarePage() {
             background: polyEnabled ? "#001a22" : "#0a0a0a",
             color: polyEnabled ? ACCENT : "#404040",
             fontSize: 8, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.15em",
+            boxShadow: polyEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
           }}
         >{polyEnabled ? "POLY" : "MONO"}</button>
       </div>
@@ -312,6 +313,7 @@ export default function Synth3HardwarePage() {
                   background: filterEnvEnabled ? "#001a22" : "#0a0a0a",
                   color: filterEnvEnabled ? ACCENT : "#404040",
                   fontSize: 10, cursor: "pointer",
+                  boxShadow: filterEnvEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
                 }}
               >{filterEnvEnabled ? "ON" : "OFF"}</button>
             </div>
@@ -367,6 +369,7 @@ export default function Synth3HardwarePage() {
                   background: lfoEnabled ? "#001a22" : "#0a0a0a",
                   color: lfoEnabled ? ACCENT : "#404040",
                   fontSize: 10, cursor: "pointer",
+                  boxShadow: lfoEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
                 }}
               >{lfoEnabled ? "ON" : "OFF"}</button>
             </div>
