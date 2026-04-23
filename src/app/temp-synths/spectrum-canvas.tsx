@@ -6,6 +6,7 @@ interface SpectrumCanvasProps {
   getFFT: () => Float32Array;
   filterFreq: number;
   resonance?: number;
+  filterType?: BiquadFilterType;
   sampleRate: number;
   fftSize: number;
   width?: number;
@@ -21,11 +22,19 @@ const MIN_DB = -100;
 const DB_RANGE = 100;
 const EQ_HALF = 36; // ±36 dB around 0 dB; 0 dB maps to vertical midpoint
 
-function biquadLowpassMagDb(f: number, fc: number, Q: number, sr: number): number {
+function biquadMagDb(f: number, fc: number, Q: number, sr: number, type: BiquadFilterType = "lowpass"): number {
   const w0 = 2 * Math.PI * fc / sr;
-  const alpha = Math.sin(w0) / (2 * Q);
+  const sinW0 = Math.sin(w0);
+  const alpha = sinW0 / (2 * Q);
   const cosW0 = Math.cos(w0);
-  const b0 = (1 - cosW0) / 2, b1 = 1 - cosW0, b2 = (1 - cosW0) / 2;
+  let b0: number, b1: number, b2: number;
+  if (type === "highpass") {
+    b0 = (1 + cosW0) / 2; b1 = -(1 + cosW0); b2 = (1 + cosW0) / 2;
+  } else if (type === "bandpass") {
+    b0 = sinW0 / 2; b1 = 0; b2 = -sinW0 / 2;
+  } else {
+    b0 = (1 - cosW0) / 2; b1 = 1 - cosW0; b2 = (1 - cosW0) / 2;
+  }
   const a0 = 1 + alpha, a1 = -2 * cosW0, a2 = 1 - alpha;
   const B0 = b0/a0, B1 = b1/a0, B2 = b2/a0, A1 = a1/a0, A2 = a2/a0;
   const w = 2 * Math.PI * f / sr;
@@ -39,6 +48,7 @@ export function SpectrumCanvas({
   getFFT,
   filterFreq,
   resonance = 1.0,
+  filterType = "lowpass",
   sampleRate,
   fftSize,
   width = 320,
@@ -51,12 +61,14 @@ export function SpectrumCanvas({
   const getRef = useRef(getFFT);
   const filterFreqRef = useRef(filterFreq);
   const resonanceRef = useRef(resonance);
+  const filterTypeRef = useRef(filterType);
   const lineColorRef = useRef(lineColor);
   const getFilterFreqRef = useRef(getFilterFreq);
 
   useEffect(() => { getRef.current = getFFT; });
   useEffect(() => { filterFreqRef.current = filterFreq; }, [filterFreq]);
   useEffect(() => { resonanceRef.current = resonance; }, [resonance]);
+  useEffect(() => { filterTypeRef.current = filterType; }, [filterType]);
   useEffect(() => { lineColorRef.current = lineColor; }, [lineColor]);
   useEffect(() => { getFilterFreqRef.current = getFilterFreq; }, [getFilterFreq]);
 
@@ -87,15 +99,15 @@ export function SpectrumCanvas({
       }
       ctx.globalAlpha = 1;
 
-      // Lowpass EQ curve — 0 dB at vertical midpoint, ±EQ_HALF dB range
+      // Filter EQ curve — 0 dB at vertical midpoint, ±EQ_HALF dB range
       ctx.strokeStyle = lineColorRef.current;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.beginPath();
+      const fc = getFilterFreqRef.current ? getFilterFreqRef.current() : filterFreqRef.current;
       for (let x = 0; x < width; x++) {
         const freq = MIN_FREQ * Math.pow(10, (x / width) * LOG_RANGE);
-        const fc = getFilterFreqRef.current ? getFilterFreqRef.current() : filterFreqRef.current;
-        const db = biquadLowpassMagDb(freq, fc, resonanceRef.current, sampleRate);
+        const db = biquadMagDb(freq, fc, resonanceRef.current, sampleRate, filterTypeRef.current);
         const clamped = Math.max(-EQ_HALF, Math.min(EQ_HALF, db));
         const y = height / 2 - (clamped / EQ_HALF) * (height / 2);
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);

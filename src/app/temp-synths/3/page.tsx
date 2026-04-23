@@ -265,6 +265,7 @@ export default function Synth3Page() {
             getFFT={getFFT}
             filterFreq={filterCutoff}
             resonance={filterRes}
+            filterType={filterType}
             sampleRate={engineRef.current?.sampleRate ?? 44100}
             fftSize={engineRef.current?.fftSize ?? 2048}
             width={180}

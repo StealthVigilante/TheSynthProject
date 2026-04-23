@@ -260,7 +260,7 @@ export default function Synth3HardwarePage() {
       </div>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
-        <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={100} height={36} lineColor={ACCENT} getFilterFreq={getFilterFreq} />
+        <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={100} height={36} lineColor={ACCENT} filterType={filterType} getFilterFreq={getFilterFreq} />
         <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
       </div>
     </div>
@@ -470,7 +470,7 @@ export default function Synth3HardwarePage() {
                   </span>
                 </div>
                 <WaveformCanvas getWaveform={getWaveform} width={200} height={48} />
-                <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={200} height={48} lineColor={ACCENT} getFilterFreq={getFilterFreq} />
+                <SpectrumCanvas getFFT={getFFT} filterFreq={filterCutoff} resonance={filterRes} sampleRate={analyserInfo.sampleRate} fftSize={analyserInfo.fftSize} width={200} height={48} lineColor={ACCENT} filterType={filterType} getFilterFreq={getFilterFreq} />
               </div>
               <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={(v) => { setVolume(v); e?.setVolume(v); }} size="sm" />
             </div>
