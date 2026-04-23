@@ -402,10 +402,10 @@ export class Synth3Engine {
     }
 
     const stopAt = now + this.ampRelease + 0.05;
-    try { voice.osc1?.stop(stopAt); } catch { /* ok */ }
-    voice.osc1?.disconnect();
-    try { voice.osc2?.stop(stopAt); } catch { /* ok */ }
-    voice.osc2?.disconnect();
+    const osc1 = voice.osc1;
+    const osc2 = voice.osc2;
+    if (osc1) { osc1.onended = () => osc1.disconnect(); try { osc1.stop(stopAt); } catch { /* ok */ } }
+    if (osc2) { osc2.onended = () => osc2.disconnect(); try { osc2.stop(stopAt); } catch { /* ok */ } }
     voice.osc1 = null;
     voice.osc2 = null;
     voice.note = null;
