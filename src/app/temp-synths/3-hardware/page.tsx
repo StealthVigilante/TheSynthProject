@@ -29,6 +29,7 @@ const TABS = [
   { id: "filter" as const, label: "FILTER" },
   { id: "env"    as const, label: "ENV"    },
   { id: "lfo"    as const, label: "LFO"    },
+  { id: "fx"     as const, label: "FX"     },
 ];
 
 function FilterTypeSelect({ value, onChange }: { value: BiquadFilterType; onChange: (v: BiquadFilterType) => void }) {
@@ -127,7 +128,7 @@ function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOff
 export default function Synth3HardwarePage() {
   const engineRef = useRef<Synth3Engine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
-  const [activeTab, setActiveTab] = useState<"osc" | "filter" | "env" | "lfo">("osc");
+  const [activeTab, setActiveTab] = useState<"osc" | "filter" | "env" | "lfo" | "fx">("osc");
   const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 2048 });
 
   const [osc1Type, setOsc1Type] = useState<string>("sawtooth");
@@ -157,6 +158,10 @@ export default function Synth3HardwarePage() {
   const [lfoEnabled, setLfoEnabled] = useState(true);
   const [filterEnvEnabled, setFilterEnvEnabled] = useState(true);
   const [polyEnabled, setPolyEnabled] = useState(false);
+  const [reverbEnabled, setReverbEnabled] = useState(false);
+  const [reverbAmount, setReverbAmount] = useState(0.3);
+  const [delayEnabled, setDelayEnabled] = useState(false);
+  const [delayAmount, setDelayAmount] = useState(0.3);
 
   const [volume, setVolume] = useState(0.8);
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
@@ -374,6 +379,44 @@ export default function Synth3HardwarePage() {
             </div>
           </div>
         )}
+        {activeTab === "fx" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em" }}>REVERB</span>
+              <button
+                onClick={() => { const next = !reverbEnabled; setReverbEnabled(next); e?.setReverbEnabled(next); }}
+                style={{
+                  padding: "3px 12px", borderRadius: 3, border: "1px solid",
+                  borderColor: reverbEnabled ? ACCENT : "#2a2a2a",
+                  background: reverbEnabled ? "#001a22" : "#0a0a0a",
+                  color: reverbEnabled ? ACCENT : "#404040",
+                  fontSize: 10, cursor: "pointer",
+                  boxShadow: reverbEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                }}
+              >{reverbEnabled ? "ON" : "OFF"}</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <Knob value={reverbAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setReverbAmount(v); e?.setReverbAmount(v); }} size="sm" />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 9, color: "#404040", fontFamily: "Arial", letterSpacing: "0.2em" }}>DELAY</span>
+              <button
+                onClick={() => { const next = !delayEnabled; setDelayEnabled(next); e?.setDelayEnabled(next); }}
+                style={{
+                  padding: "3px 12px", borderRadius: 3, border: "1px solid",
+                  borderColor: delayEnabled ? ACCENT : "#2a2a2a",
+                  background: delayEnabled ? "#001a22" : "#0a0a0a",
+                  color: delayEnabled ? ACCENT : "#404040",
+                  fontSize: 10, cursor: "pointer",
+                  boxShadow: delayEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                }}
+              >{delayEnabled ? "ON" : "OFF"}</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob value={delayAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setDelayAmount(v); e?.setDelayAmount(v); }} size="sm" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -578,6 +621,48 @@ export default function Synth3HardwarePage() {
                     boxShadow: lfoEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
                   }}
                 >{lfoEnabled ? "ON" : "OFF"}</button>
+              </div>
+            </div>
+
+            {/* FX row */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={sectionPanel}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, borderBottom: "1px solid #1a1a1a", paddingBottom: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", color: "#404040", fontFamily: "Arial", textTransform: "uppercase" }}>Reverb</span>
+                  <button
+                    onClick={() => { const next = !reverbEnabled; setReverbEnabled(next); e?.setReverbEnabled(next); }}
+                    style={{
+                      padding: "2px 8px", borderRadius: 3, border: "1px solid",
+                      borderColor: reverbEnabled ? ACCENT : "#2a2a2a",
+                      background: reverbEnabled ? "#001a22" : "#0a0a0a",
+                      color: reverbEnabled ? ACCENT : "#404040",
+                      fontSize: 9, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.1em",
+                      boxShadow: reverbEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                    }}
+                  >{reverbEnabled ? "ON" : "OFF"}</button>
+                </div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <Knob value={reverbAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setReverbAmount(v); e?.setReverbAmount(v); }} size="sm" />
+                </div>
+              </div>
+              <div style={sectionPanel}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, borderBottom: "1px solid #1a1a1a", paddingBottom: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.3em", color: "#404040", fontFamily: "Arial", textTransform: "uppercase" }}>Delay</span>
+                  <button
+                    onClick={() => { const next = !delayEnabled; setDelayEnabled(next); e?.setDelayEnabled(next); }}
+                    style={{
+                      padding: "2px 8px", borderRadius: 3, border: "1px solid",
+                      borderColor: delayEnabled ? ACCENT : "#2a2a2a",
+                      background: delayEnabled ? "#001a22" : "#0a0a0a",
+                      color: delayEnabled ? ACCENT : "#404040",
+                      fontSize: 9, cursor: "pointer", fontFamily: "Arial", letterSpacing: "0.1em",
+                      boxShadow: delayEnabled ? "inset 0 0 6px rgba(0,212,255,0.2)" : "none",
+                    }}
+                  >{delayEnabled ? "ON" : "OFF"}</button>
+                </div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <Knob value={delayAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setDelayAmount(v); e?.setDelayAmount(v); }} size="sm" />
+                </div>
               </div>
             </div>
 

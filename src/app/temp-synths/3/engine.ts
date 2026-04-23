@@ -23,6 +23,13 @@ export class Synth3Engine {
   private lfoFilterGate: GainNode; // → filter.frequency
   private lfoStartTime = 0;
 
+  // FX
+  private convolver: ConvolverNode = null!;
+  private reverbWetGain: GainNode = null!;
+  private delayNode: DelayNode = null!;
+  private delayFeedback: GainNode = null!;
+  private delayWetGain: GainNode = null!;
+
   // Poly voice pool
   private readonly MAX_VOICES = 4;
   private polyVoices: Array<{
@@ -63,6 +70,12 @@ export class Synth3Engine {
   lfoEnabled = true;
   filterEnvEnabled = true;
   polyEnabled = false;
+
+  reverbEnabled = false;
+  reverbAmount = 0.3;
+  delayEnabled = false;
+  delayAmount = 0.3;
+  delayTime = 0.375;
 
   constructor() {
     this.ctx = getAudioContext();
@@ -143,7 +156,30 @@ export class Synth3Engine {
     this.master.connect(this.analyser);
     this.analyser.connect(this.compressor);
     this.compressor.connect(this.masterGain);
+    // Dry path
     this.masterGain.connect(this.ctx.destination);
+
+    // Reverb (parallel wet send)
+    this.convolver = this.ctx.createConvolver();
+    this.convolver.buffer = this.createImpulseResponse();
+    this.reverbWetGain = this.ctx.createGain();
+    this.reverbWetGain.gain.value = 0;
+    this.masterGain.connect(this.reverbWetGain);
+    this.reverbWetGain.connect(this.convolver);
+    this.convolver.connect(this.ctx.destination);
+
+    // Delay (parallel wet send with feedback loop)
+    this.delayNode = this.ctx.createDelay(2.0);
+    this.delayNode.delayTime.value = this.delayTime;
+    this.delayFeedback = this.ctx.createGain();
+    this.delayFeedback.gain.value = 0.4;
+    this.delayWetGain = this.ctx.createGain();
+    this.delayWetGain.gain.value = 0;
+    this.masterGain.connect(this.delayNode);
+    this.delayNode.connect(this.delayFeedback);
+    this.delayFeedback.connect(this.delayNode);
+    this.delayNode.connect(this.delayWetGain);
+    this.delayWetGain.connect(this.ctx.destination);
   }
 
   noteOn(note: string, velocity = 0.8): void {
@@ -412,7 +448,7 @@ export class Synth3Engine {
   }
 
   getFilterFreq(): number {
-    const base = this.filter.frequency.value;
+    const base = this.filterCutoff;
     if (this.lfoEnabled && this.lfoRoute === "filter") {
       const t = this.ctx.currentTime - this.lfoStartTime;
       const phase = 2 * Math.PI * this.lfoRate * t;
@@ -469,6 +505,43 @@ export class Synth3Engine {
     }
   }
 
+  private createImpulseResponse(duration = 2.5, decay = 2.5): AudioBuffer {
+    const sr = this.ctx.sampleRate;
+    const length = Math.floor(sr * duration);
+    const buf = this.ctx.createBuffer(2, length, sr);
+    for (let c = 0; c < 2; c++) {
+      const data = buf.getChannelData(c);
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      }
+    }
+    return buf;
+  }
+
+  setReverbEnabled(on: boolean): void {
+    this.reverbEnabled = on;
+    this.reverbWetGain.gain.setTargetAtTime(on ? this.reverbAmount : 0, this.ctx.currentTime, 0.02);
+  }
+
+  setReverbAmount(amount: number): void {
+    this.reverbAmount = amount;
+    if (this.reverbEnabled) {
+      this.reverbWetGain.gain.setTargetAtTime(amount, this.ctx.currentTime, 0.01);
+    }
+  }
+
+  setDelayEnabled(on: boolean): void {
+    this.delayEnabled = on;
+    this.delayWetGain.gain.setTargetAtTime(on ? this.delayAmount : 0, this.ctx.currentTime, 0.02);
+  }
+
+  setDelayAmount(amount: number): void {
+    this.delayAmount = amount;
+    if (this.delayEnabled) {
+      this.delayWetGain.gain.setTargetAtTime(amount, this.ctx.currentTime, 0.01);
+    }
+  }
+
   dispose(): void {
     this.osc1?.stop();
     this.osc1?.disconnect();
@@ -487,6 +560,11 @@ export class Synth3Engine {
     this.analyser.disconnect();
     this.compressor.disconnect();
     this.masterGain.disconnect();
+    this.reverbWetGain.disconnect();
+    this.convolver.disconnect();
+    this.delayNode.disconnect();
+    this.delayFeedback.disconnect();
+    this.delayWetGain.disconnect();
     for (const v of this.polyVoices) {
       try { v.osc1?.stop(); } catch { /* ok */ }
       v.osc1?.disconnect();

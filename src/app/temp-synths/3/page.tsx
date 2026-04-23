@@ -180,6 +180,10 @@ export default function Synth3Page() {
   const [lfoEnabled, setLfoEnabled] = useState(true);
   const [filterEnvEnabled, setFilterEnvEnabled] = useState(true);
   const [polyEnabled, setPolyEnabled] = useState(false);
+  const [reverbEnabled, setReverbEnabled] = useState(false);
+  const [reverbAmount, setReverbAmount] = useState(0.3);
+  const [delayEnabled, setDelayEnabled] = useState(false);
+  const [delayAmount, setDelayAmount] = useState(0.3);
 
   const [activeNotes, setActiveNotes] = useState<Set<string>>(new Set());
   const [noteOnMs, setNoteOnMs] = useState<number | null>(null);
@@ -388,6 +392,49 @@ export default function Synth3Page() {
               fontSize: 10, fontWeight: 700, cursor: "pointer", letterSpacing: "0.1em",
             }}
           >{lfoEnabled ? "ON" : "OFF"}</button>
+        </div>
+      </div>
+
+      <div style={SECTION}>
+        <p style={LABEL}>FX</p>
+        <div style={{ display: "flex", gap: 24 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ ...SUBLABEL, marginBottom: 0 }}>Reverb</span>
+              <button
+                onClick={() => { const next = !reverbEnabled; setReverbEnabled(next); e?.setReverbEnabled(next); }}
+                style={{
+                  padding: "3px 8px", borderRadius: 6, border: "1px solid",
+                  borderColor: reverbEnabled ? "var(--primary)" : "var(--border)",
+                  background: reverbEnabled ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+                  color: reverbEnabled ? "var(--foreground)" : "var(--muted-foreground)",
+                  fontSize: 10, fontWeight: 700, cursor: "pointer",
+                }}
+              >{reverbEnabled ? "ON" : "OFF"}</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob value={reverbAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setReverbAmount(v); e?.setReverbAmount(v); }} size="sm" />
+            </div>
+          </div>
+          <div style={{ width: 1, background: "var(--border)", alignSelf: "stretch" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ ...SUBLABEL, marginBottom: 0 }}>Delay</span>
+              <button
+                onClick={() => { const next = !delayEnabled; setDelayEnabled(next); e?.setDelayEnabled(next); }}
+                style={{
+                  padding: "3px 8px", borderRadius: 6, border: "1px solid",
+                  borderColor: delayEnabled ? "var(--primary)" : "var(--border)",
+                  background: delayEnabled ? "oklch(from var(--primary) l c h / 10%)" : "var(--card)",
+                  color: delayEnabled ? "var(--foreground)" : "var(--muted-foreground)",
+                  fontSize: 10, fontWeight: 700, cursor: "pointer",
+                }}
+              >{delayEnabled ? "ON" : "OFF"}</button>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob value={delayAmount} min={0} max={1} step={0.01} label="Amount" onChange={(v) => { setDelayAmount(v); e?.setDelayAmount(v); }} size="sm" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
