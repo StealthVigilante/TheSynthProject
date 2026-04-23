@@ -25,9 +25,10 @@ export class Synth2Engine {
   cutoff = 3000;
   resonance = 1;
   attack = 0.05;
-  sustainOn = true;
+  decay = 0.15;
+  sustainLevel = 0.7;
   release = 0.6;
-  reverbOn = false;
+  reverbAmount = 0;
   delayAmount = 0;
 
   private currentNote: string | null = null;
@@ -135,9 +136,7 @@ export class Synth2Engine {
     this.envGain.gain.cancelScheduledValues(now);
     this.envGain.gain.setValueAtTime(0, now);
     this.envGain.gain.linearRampToValueAtTime(velocity, now + this.attack);
-    if (!this.sustainOn) {
-      this.envGain.gain.linearRampToValueAtTime(0, now + this.attack + this.release);
-    }
+    this.envGain.gain.linearRampToValueAtTime(velocity * this.sustainLevel, now + this.attack + this.decay);
   }
 
   noteOff(note: string): void {
@@ -175,14 +174,15 @@ export class Synth2Engine {
   }
 
   setAttack(s: number): void { this.attack = s; }
-  setSustain(on: boolean): void { this.sustainOn = on; }
+  setDecay(s: number): void { this.decay = s; }
+  setSustainLevel(level: number): void { this.sustainLevel = level; }
   setRelease(s: number): void { this.release = s; }
 
-  setReverb(on: boolean): void {
-    this.reverbOn = on;
+  setReverb(amount: number): void {
+    this.reverbAmount = amount;
     const now = this.ctx.currentTime;
-    this.reverbSend.gain.setTargetAtTime(on ? 0.5 : 0, now, 0.02);
-    this.master.gain.setTargetAtTime(on ? 0.7 : 0.8, now, 0.02);
+    this.reverbSend.gain.setTargetAtTime(amount * 0.5, now, 0.02);
+    this.master.gain.setTargetAtTime(0.8 - amount * 0.1, now, 0.02);
   }
 
   setDelay(amount: number): void {

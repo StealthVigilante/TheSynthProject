@@ -1,3 +1,32 @@
+# Synth 1 Hardware Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Create `src/app/temp-synths/1-hardware/page.tsx` — a hardware-aesthetic variant of The Starter synth at `/temp-synths/1-hardware` with an Elektron-style dark precision chassis and identical audio engine.
+
+**Architecture:** Single self-contained page file. Reuses `Synth1Engine` from `../1/engine` unchanged. Desktop renders a custom 3D chassis (top face + chassis body + faceplate) with inline styles only. Mobile delegates layout to `SynthShell` with hardware color theme.
+
+**Tech Stack:** Next.js App Router (App dir), React 18, Web Audio API via `Synth1Engine`, existing synth UI components (`Knob`, `Fader`, `WaveformSelect`, `PianoKeyboard`, `WaveformCanvas`, `SpectrumCanvas`, `SynthShell`), `useBreakpoint` hook.
+
+---
+
+## File Structure
+
+| File | Action | Purpose |
+|---|---|---|
+| `src/app/temp-synths/1-hardware/page.tsx` | Create | Entire hardware page — all layout, state, handlers |
+| `src/app/temp-synths/1/engine.ts` | Read-only | Imported as-is, zero changes |
+
+---
+
+### Task 1: Scaffold — engine, state, handlers, currentNote
+
+**Files:**
+- Create: `src/app/temp-synths/1-hardware/page.tsx`
+
+- [ ] **Step 1: Create the file with all imports, state, handlers, QWERTY bindings, and a placeholder return**
+
+```tsx
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -32,7 +61,7 @@ export default function Synth1HardwarePage() {
   const engineRef = useRef<Synth1Engine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
 
-  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 2048 });
+  const [analyserInfo, setAnalyserInfo] = useState({ sampleRate: 44100, fftSize: 1024 });
   const [waveform, setWaveformState] = useState<string>("sine");
   const [filterFreq, setFilterFreqState] = useState(4000);
   const [attack, setAttackState] = useState(0.02);
@@ -145,168 +174,34 @@ export default function Synth1HardwarePage() {
     };
   }, [isMobile, noteOn, noteOff]);
 
-  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
-    flex: 1,
-    padding: "8px 4px",
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: "0.08em",
-    background: "none",
-    border: "none",
-    borderBottom: active ? "2px solid #00d4ff" : "2px solid transparent",
-    color: active ? "#ffffff" : "#404040",
-    cursor: "pointer",
-  });
+  return <div style={{ color: "#fff", padding: 40 }}>WIP</div>;
+}
+```
 
-  const mobilePanelStyle: React.CSSProperties = {
-    background: "#0a0a0a",
-    border: "1px solid #1e1e1e",
-    borderRadius: 5,
-    padding: "14px 12px",
-  };
+- [ ] **Step 2: Verify TypeScript compiles**
 
-  const mobileHeader = (
-    <div style={{
-      padding: "8px 12px",
-      borderBottom: "1px solid #1e1e1e",
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#ffffff", fontFamily: "Arial" }}>
-          The Starter
-        </p>
-        <p style={{ fontSize: 9, color: "#404040", margin: "1px 0 0" }}>
-          Hardware Edition
-        </p>
-      </div>
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
-        <SpectrumCanvas
-          getFFT={getFFT}
-          filterFreq={filterFreq}
-          sampleRate={analyserInfo.sampleRate}
-          fftSize={analyserInfo.fftSize}
-          width={100}
-          height={36}
-          lineColor="#00d4ff"
-        />
-        <div style={{ marginLeft: 4 }}>
-          <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={handleVolume} size="sm" />
-        </div>
-      </div>
-    </div>
-  );
+Run: `npm run build`
+Expected: build succeeds with no TypeScript errors (or only pre-existing unrelated errors)
 
-  const mobileControls = (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ display: "flex", borderBottom: "1px solid #1e1e1e", flexShrink: 0 }}>
-        {TABS.map((tab) => (
-          <button key={tab.id} style={tabBtnStyle(activeTab === tab.id)} onClick={() => setActiveTab(tab.id)}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
-        {activeTab === "osc" && (
-          <div style={mobilePanelStyle}>
-            <WaveformSelect
-              value={waveform}
-              options={["sine", "square", "sawtooth", "triangle"]}
-              onChange={handleWaveform}
-              label="Waveform"
-            />
-          </div>
-        )}
-        {activeTab === "filter" && (
-          <div style={mobilePanelStyle}>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <Knob
-                value={filterFreq}
-                min={80}
-                max={18000}
-                step={10}
-                label="TONE"
-                unit="Hz"
-                scale="log"
-                onChange={handleFilterFreq}
-                size="sm"
-              />
-            </div>
-          </div>
-        )}
-        {activeTab === "env" && (
-          <div style={mobilePanelStyle}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-              <Fader value={attack} min={0.001} max={2} step={0.001} label="ATK" unit="s" onChange={handleAttack} />
-              <Fader value={release} min={0.05} max={4} step={0.01} label="REL" unit="s" onChange={handleRelease} />
-            </div>
-          </div>
-        )}
-        {activeTab === "fx" && (
-          <div style={mobilePanelStyle}>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <button
-                onClick={handleReverb}
-                aria-label={reverb ? "Reverb on" : "Reverb off"}
-                style={{
-                  padding: "8px 20px",
-                  borderRadius: 3,
-                  border: `1px solid ${reverb ? "#00d4ff" : "#2a2a2a"}`,
-                  background: reverb ? "#001a22" : "#0a0a0a",
-                  color: reverb ? "#00d4ff" : "#404040",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.15em",
-                  cursor: "pointer",
-                  boxShadow: reverb ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
-                }}
-              >
-                REVERB
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+- [ ] **Step 3: Commit scaffold**
 
-  const mobileKeyboard = (
-    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <PianoKeyboard
-        onNoteOn={noteOn}
-        onNoteOff={noteOff}
-        startOctave={startOctave}
-        octaves={2}
-        activeNotes={activeNotes}
-        whiteKeyWidth={mobileKeyWidth}
-        whiteKeyHeight={80}
-      />
-    </div>
-  );
+```bash
+git add src/app/temp-synths/1-hardware/page.tsx
+git commit -m "feat: scaffold synth1-hardware page with engine, state, handlers"
+```
 
-  const themeVars = {
-    "--primary": "#00d4ff",
-    "--color-primary": "#00d4ff",
-    "--primary-foreground": "#000a0f",
-  } as React.CSSProperties;
+---
 
-  if (isMobile) {
-    return (
-      <div style={themeVars}>
-        <SynthShell
-          isMobile={true}
-          theme={MOBILE_THEME}
-          header={mobileHeader}
-          controls={mobileControls}
-          keyboard={mobileKeyboard}
-          navHeight={48}
-        />
-      </div>
-    );
-  }
+### Task 2: Desktop chassis — 3D body + header
 
+**Files:**
+- Modify: `src/app/temp-synths/1-hardware/page.tsx`
+
+- [ ] **Step 1: Replace the WIP return with the full desktop layout**
+
+Replace the entire `return <div style={{ color: "#fff", padding: 40 }}>WIP</div>;` with:
+
+```tsx
   const sectionLabel: React.CSSProperties = {
     fontSize: 9,
     fontWeight: 700,
@@ -330,7 +225,6 @@ export default function Synth1HardwarePage() {
 
   return (
     <div style={{
-      ...themeVars,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -423,7 +317,6 @@ export default function Synth1HardwarePage() {
                   fftSize={analyserInfo.fftSize}
                   width={200}
                   height={48}
-                  lineColor="#00d4ff"
                 />
               </div>
 
@@ -501,7 +394,6 @@ export default function Synth1HardwarePage() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <button
                     onClick={handleReverb}
-                    aria-label={reverb ? "Reverb on" : "Reverb off"}
                     style={{
                       width: 56,
                       height: 22,
@@ -524,79 +416,583 @@ export default function Synth1HardwarePage() {
               background: "#050505",
               borderRadius: 5,
               border: "1px solid #111",
-              padding: "0",
+              padding: "10px 8px 8px",
               boxShadow: "inset 0 2px 6px rgba(0,0,0,0.5)",
-              overflow: "hidden",
             }}>
-              {/* Top strip — octave navigation */}
+              {/* Octave navigation */}
               <div style={{
                 display: "flex",
-                alignItems: "stretch",
-                height: 28,
-                background: "linear-gradient(90deg, #080808, #111 10%, #111 90%, #080808)",
-                borderBottom: "1px solid #080808",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 6,
+                justifyContent: "center",
               }}>
                 <button
                   style={{
-                    border: "none",
-                    borderRight: "1px solid #1a1a1a",
-                    background: "transparent",
-                    color: startOctave <= 1 ? "#222" : "#666",
-                    fontSize: 12,
-                    padding: "0 16px",
-                    cursor: startOctave <= 1 ? "default" : "pointer",
-                    fontFamily: "Arial",
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
                   }}
                   onClick={() => setStartOctave((o) => Math.max(1, o - 1))}
                   disabled={startOctave <= 1}
                   aria-label="Octave down"
                 >
-                  ◀
+                  −
                 </button>
-                <span style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#2a2a2a",
-                  fontSize: 9,
-                  fontFamily: "Arial",
-                  letterSpacing: "0.3em",
-                }}>
-                  OCT {startOctave}–{startOctave + 2}
+                <span style={{ color: "#404040", fontSize: 12, minWidth: 74, textAlign: "center" }}>
+                  Oct {startOctave}–{startOctave + 2}
                 </span>
                 <button
                   style={{
-                    border: "none",
-                    borderLeft: "1px solid #1a1a1a",
-                    background: "transparent",
-                    color: startOctave >= 5 ? "#222" : "#666",
-                    fontSize: 12,
-                    padding: "0 16px",
-                    cursor: startOctave >= 5 ? "default" : "pointer",
-                    fontFamily: "Arial",
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
                   }}
                   onClick={() => setStartOctave((o) => Math.min(5, o + 1))}
                   disabled={startOctave >= 5}
                   aria-label="Octave up"
                 >
-                  ▶
+                  +
                 </button>
               </div>
 
-              <PianoKeyboard
-                onNoteOn={noteOn}
-                onNoteOff={noteOff}
-                startOctave={startOctave}
-                octaves={3}
-                activeNotes={activeNotes}
-                whiteKeyWidth={33}
-                whiteKeyHeight={96}
-              />
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <PianoKeyboard
+                  onNoteOn={noteOn}
+                  onNoteOff={noteOff}
+                  startOctave={startOctave}
+                  octaves={3}
+                  activeNotes={activeNotes}
+                  whiteKeyWidth={28}
+                  whiteKeyHeight={88}
+                />
+              </div>
+
+              {/* Bottom rubber strip */}
+              <div style={{
+                height: 6,
+                background: "linear-gradient(90deg, #080808, #111 20%, #111 80%, #080808)",
+                borderTop: "1px solid #080808",
+                marginTop: 4,
+              }} />
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-}
+```
+
+- [ ] **Step 2: Verify in browser**
+
+Navigate to `http://localhost:3000/temp-synths/1-hardware` on desktop (width ≥ 1024px).
+
+Check:
+- Page background is near-black (#0a0a0a)
+- 3D top face panel appears above chassis (angled lid visible)
+- Chassis has visible side/bottom depth shadows
+- Faceplate is recessed (inset shadow)
+- Header row: "THE STARTER" left, OLED + canvases center, vol knob right
+- OLED shows "---" at rest, shows note name when a key is pressed
+- 4-panel grid with cyan top border on each panel
+- Keyboard with octave navigation buttons
+- Rubber strip below keyboard
+
+- [ ] **Step 3: Commit desktop layout**
+
+```bash
+git add src/app/temp-synths/1-hardware/page.tsx
+git commit -m "feat: synth1-hardware desktop chassis, header, controls, keyboard"
+```
+
+---
+
+### Task 3: Mobile layout + conditional return + final commit
+
+**Files:**
+- Modify: `src/app/temp-synths/1-hardware/page.tsx`
+
+- [ ] **Step 1: Insert mobile sections and convert to conditional return**
+
+The current file ends with `return ( <div ...> ... </div> )` — replace the entire return statement (from `const sectionLabel` onward) with the full conditional version:
+
+```tsx
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: "0.3em",
+    color: "#404040",
+    fontFamily: "Arial",
+    textTransform: "uppercase",
+    marginBottom: 12,
+    borderBottom: "1px solid #1a1a1a",
+    paddingBottom: 8,
+  };
+
+  const sectionPanel: React.CSSProperties = {
+    background: "#0a0a0a",
+    border: "1px solid #1e1e1e",
+    borderTop: "2px solid #00d4ff",
+    borderRadius: 5,
+    padding: "14px 12px",
+    textAlign: "center",
+  };
+
+  // ── Mobile ──────────────────────────────────────────────────────────────────
+
+  const tabBtnStyle = (active: boolean): React.CSSProperties => ({
+    flex: 1,
+    padding: "8px 4px",
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    background: "none",
+    border: "none",
+    borderBottom: active ? "2px solid #00d4ff" : "2px solid transparent",
+    color: active ? "#ffffff" : "#404040",
+    cursor: "pointer",
+  });
+
+  const mobilePanelStyle: React.CSSProperties = {
+    background: "#0a0a0a",
+    border: "1px solid #1e1e1e",
+    borderRadius: 5,
+    padding: "14px 12px",
+  };
+
+  const mobileHeader = (
+    <div style={{
+      padding: "8px 12px",
+      borderBottom: "1px solid #1e1e1e",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, margin: 0, color: "#ffffff", fontFamily: "Arial" }}>
+          The Starter
+        </p>
+        <p style={{ fontSize: 9, color: "#404040", margin: "1px 0 0" }}>
+          Hardware Edition
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <WaveformCanvas getWaveform={getWaveform} width={100} height={36} />
+        <SpectrumCanvas
+          getFFT={getFFT}
+          filterFreq={filterFreq}
+          sampleRate={analyserInfo.sampleRate}
+          fftSize={analyserInfo.fftSize}
+          width={100}
+          height={36}
+        />
+        <div style={{ marginLeft: 4 }}>
+          <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={handleVolume} size="sm" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const mobileControls = (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1e1e1e", flexShrink: 0 }}>
+        {TABS.map((tab) => (
+          <button key={tab.id} style={tabBtnStyle(activeTab === tab.id)} onClick={() => setActiveTab(tab.id)}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ flex: 1, padding: "12px 16px", overflowY: "auto" }}>
+        {activeTab === "osc" && (
+          <div style={mobilePanelStyle}>
+            <WaveformSelect
+              value={waveform}
+              options={["sine", "square", "sawtooth", "triangle"]}
+              onChange={handleWaveform}
+              label="Waveform"
+            />
+          </div>
+        )}
+        {activeTab === "filter" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Knob
+                value={filterFreq}
+                min={80}
+                max={18000}
+                step={10}
+                label="TONE"
+                unit="Hz"
+                scale="log"
+                onChange={handleFilterFreq}
+                size="sm"
+              />
+            </div>
+          </div>
+        )}
+        {activeTab === "env" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
+              <Fader value={attack} min={0.001} max={2} step={0.001} label="ATK" unit="s" onChange={handleAttack} />
+              <Fader value={release} min={0.05} max={4} step={0.01} label="REL" unit="s" onChange={handleRelease} />
+            </div>
+          </div>
+        )}
+        {activeTab === "fx" && (
+          <div style={mobilePanelStyle}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <button
+                onClick={handleReverb}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 3,
+                  border: `1px solid ${reverb ? "#00d4ff" : "#2a2a2a"}`,
+                  background: reverb ? "#001a22" : "#0a0a0a",
+                  color: reverb ? "#00d4ff" : "#404040",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  boxShadow: reverb ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
+                }}
+              >
+                REVERB
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const mobileKeyboard = (
+    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <PianoKeyboard
+        onNoteOn={noteOn}
+        onNoteOff={noteOff}
+        startOctave={startOctave}
+        octaves={2}
+        activeNotes={activeNotes}
+        whiteKeyWidth={mobileKeyWidth}
+        whiteKeyHeight={80}
+      />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <SynthShell
+        isMobile={true}
+        theme={MOBILE_THEME}
+        header={mobileHeader}
+        controls={mobileControls}
+        keyboard={mobileKeyboard}
+        navHeight={48}
+      />
+    );
+  }
+
+  // ── Desktop ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "calc(100dvh - 48px)",
+      background: "#0a0a0a",
+    }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* Top face — 3D lid */}
+        <div style={{
+          width: 760,
+          height: 18,
+          background: "linear-gradient(180deg, #2e2e2e, #1e1e1e)",
+          borderRadius: "12px 12px 0 0",
+          border: "1px solid #3a3a3a",
+          borderBottom: "none",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+          transform: "perspective(500px) rotateX(-18deg) scaleY(0.55)",
+          transformOrigin: "bottom center",
+          marginBottom: -1,
+        }} />
+
+        {/* Chassis body */}
+        <div style={{
+          background: "linear-gradient(175deg, #1e1e1e 0%, #141414 60%, #0e0e0e 100%)",
+          borderRadius: "0 0 10px 10px",
+          border: "1px solid #282828",
+          borderTop: "1px solid #3a3a3a",
+          boxShadow: `
+            inset 0 1px 0 rgba(255,255,255,0.04),
+            -5px 0 0 #0c0c0c,
+            5px 0 0 #0c0c0c,
+            0 5px 0 #080808,
+            0 7px 0 #060606,
+            0 9px 0 #040404,
+            0 18px 50px rgba(0,0,0,0.95)
+          `,
+          width: 760,
+        }}>
+          {/* Faceplate */}
+          <div style={{
+            margin: 14,
+            background: "#0f0f0f",
+            borderRadius: 6,
+            border: "1px solid #1a1a1a",
+            boxShadow: "inset 0 2px 10px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.02)",
+            padding: "16px 18px",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderBottom: "1px solid #1a1a1a",
+              paddingBottom: 14,
+              marginBottom: 14,
+            }}>
+              {/* Left: Title */}
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.3em", color: "#ffffff", fontFamily: "Arial", margin: 0 }}>
+                  THE STARTER
+                </p>
+                <p style={{ fontSize: 7, color: "#404040", letterSpacing: "0.25em", margin: "3px 0 0", fontFamily: "Arial" }}>
+                  SYNTHESIZER · MK I
+                </p>
+              </div>
+
+              {/* Center: OLED note display + canvases */}
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{
+                  background: "#000",
+                  border: "1px solid #1e1e1e",
+                  borderRadius: 3,
+                  padding: "5px 12px",
+                }}>
+                  <span style={{
+                    color: "#00d4ff",
+                    fontSize: 16,
+                    fontFamily: "monospace",
+                    letterSpacing: 3,
+                    textShadow: "0 0 8px rgba(0,212,255,0.5)",
+                  }}>
+                    {currentNote ?? "---"}
+                  </span>
+                </div>
+                <WaveformCanvas getWaveform={getWaveform} width={200} height={48} />
+                <SpectrumCanvas
+                  getFFT={getFFT}
+                  filterFreq={filterFreq}
+                  sampleRate={analyserInfo.sampleRate}
+                  fftSize={analyserInfo.fftSize}
+                  width={200}
+                  height={48}
+                />
+              </div>
+
+              {/* Right: Volume knob */}
+              <Knob value={volume} min={0} max={1} step={0.01} label="VOL" onChange={handleVolume} size="sm" />
+            </div>
+
+            {/* Controls grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr 1fr",
+              gap: 12,
+              marginBottom: 14,
+            }}>
+              {/* OSC */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>OSC</p>
+                <WaveformSelect
+                  value={waveform}
+                  options={["sine", "square", "sawtooth", "triangle"]}
+                  onChange={handleWaveform}
+                  size="md"
+                  label="Waveform"
+                />
+              </div>
+
+              {/* FILTER */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>FILTER</p>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <Knob
+                    value={filterFreq}
+                    min={80}
+                    max={18000}
+                    step={10}
+                    label="TONE"
+                    unit="Hz"
+                    scale="log"
+                    onChange={handleFilterFreq}
+                    size="lg"
+                  />
+                </div>
+              </div>
+
+              {/* ENV */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>ENV</p>
+                <div style={{ display: "flex", justifyContent: "center", gap: 28 }}>
+                  <Fader
+                    value={attack}
+                    min={0.001}
+                    max={2}
+                    step={0.001}
+                    label="Attack"
+                    unit="s"
+                    size="md"
+                    onChange={handleAttack}
+                  />
+                  <Fader
+                    value={release}
+                    min={0.05}
+                    max={4}
+                    step={0.01}
+                    label="Release"
+                    unit="s"
+                    size="md"
+                    onChange={handleRelease}
+                  />
+                </div>
+              </div>
+
+              {/* FX */}
+              <div style={sectionPanel}>
+                <p style={sectionLabel}>FX</p>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <button
+                    onClick={handleReverb}
+                    style={{
+                      width: 56,
+                      height: 22,
+                      borderRadius: 3,
+                      border: `1px solid ${reverb ? "#00d4ff" : "#2a2a2a"}`,
+                      background: reverb ? "#001a22" : "#0a0a0a",
+                      boxShadow: reverb ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
+                      cursor: "pointer",
+                    }}
+                  />
+                  <span style={{ fontSize: 8, color: "#404040", fontFamily: "Arial", letterSpacing: "0.1em" }}>
+                    REVERB
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyboard section */}
+            <div style={{
+              background: "#050505",
+              borderRadius: 5,
+              border: "1px solid #111",
+              padding: "10px 8px 8px",
+              boxShadow: "inset 0 2px 6px rgba(0,0,0,0.5)",
+            }}>
+              {/* Octave navigation */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 6,
+                justifyContent: "center",
+              }}>
+                <button
+                  style={{
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setStartOctave((o) => Math.max(1, o - 1))}
+                  disabled={startOctave <= 1}
+                  aria-label="Octave down"
+                >
+                  −
+                </button>
+                <span style={{ color: "#404040", fontSize: 12, minWidth: 74, textAlign: "center" }}>
+                  Oct {startOctave}–{startOctave + 2}
+                </span>
+                <button
+                  style={{
+                    border: "1px solid #2a2a2a",
+                    background: "#111",
+                    color: "#888",
+                    borderRadius: 3,
+                    fontSize: 16,
+                    padding: "3px 10px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setStartOctave((o) => Math.min(5, o + 1))}
+                  disabled={startOctave >= 5}
+                  aria-label="Octave up"
+                >
+                  +
+                </button>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <PianoKeyboard
+                  onNoteOn={noteOn}
+                  onNoteOff={noteOff}
+                  startOctave={startOctave}
+                  octaves={3}
+                  activeNotes={activeNotes}
+                  whiteKeyWidth={28}
+                  whiteKeyHeight={88}
+                />
+              </div>
+
+              {/* Bottom rubber strip */}
+              <div style={{
+                height: 6,
+                background: "linear-gradient(90deg, #080808, #111 20%, #111 80%, #080808)",
+                borderTop: "1px solid #080808",
+                marginTop: 4,
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+```
+
+- [ ] **Step 2: Verify build**
+
+Run: `npm run build`
+Expected: no TypeScript errors
+
+- [ ] **Step 3: Verify mobile in browser**
+
+Resize browser to < 1024px wide (or use DevTools mobile emulation).
+
+Check:
+- Dark background (#0a0a0a)
+- Header row: title left, canvases + vol knob right
+- Tab bar uses cyan underline for active tab
+- Each tab panel has dark background with cyan-top-border panel
+- FX tab shows REVERB button that lights up cyan when active
+
+- [ ] **Step 4: Verify desktop OLED note display**
+
+On desktop, press a keyboard key (e.g. `a`). OLED should switch from "---" to "C3" (or whichever note). Release — OLED returns to "---".
+
+- [ ] **Step 5: Final commit**
+
+```bash
+git add src/app/temp-synths/1-hardware/page.tsx
+git commit -m "feat: synth1-hardware complete — mobile layout, OLED note display, conditional return"
+```

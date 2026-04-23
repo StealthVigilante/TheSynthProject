@@ -10,6 +10,7 @@ interface SpectrumCanvasProps {
   fftSize: number;
   width?: number;
   height?: number;
+  lineColor?: string;
 }
 
 const MIN_FREQ = 20;
@@ -41,16 +42,19 @@ export function SpectrumCanvas({
   fftSize,
   width = 320,
   height = 80,
+  lineColor = "#f97316",
 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const getRef = useRef(getFFT);
   const filterFreqRef = useRef(filterFreq);
   const resonanceRef = useRef(resonance);
+  const lineColorRef = useRef(lineColor);
 
   useEffect(() => { getRef.current = getFFT; });
   useEffect(() => { filterFreqRef.current = filterFreq; }, [filterFreq]);
   useEffect(() => { resonanceRef.current = resonance; }, [resonance]);
+  useEffect(() => { lineColorRef.current = lineColor; }, [lineColor]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -80,7 +84,7 @@ export function SpectrumCanvas({
       ctx.globalAlpha = 1;
 
       // Lowpass EQ curve — 0 dB at vertical midpoint, ±EQ_HALF dB range
-      ctx.strokeStyle = "#f97316";
+      ctx.strokeStyle = lineColorRef.current;
       ctx.lineWidth = 1.5;
       ctx.lineJoin = "round";
       ctx.beginPath();

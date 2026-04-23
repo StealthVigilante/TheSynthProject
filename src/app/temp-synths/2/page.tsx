@@ -81,25 +81,29 @@ const lerp = (a: number, b: number, t: number) =>
 
 interface EnvelopeCurveProps {
   attack: number;
+  decay: number;
+  sustainLevel: number;
   release: number;
-  sustainOn: boolean;
   noteOnMs: number | null;
   noteOffMs: number | null;
+  width?: number;
+  height?: number;
 }
 
-function EnvelopeCurve({ attack, release, sustainOn, noteOnMs, noteOffMs }: EnvelopeCurveProps) {
-  const W = 280;
-  const H = 80;
-  const maxT = 3;
-
-  const aX = (Math.min(attack, maxT) / maxT) * (W * 0.3);
-  const sX = W * 0.55;
-  const rEnd = W * 0.85 + (Math.min(release, maxT) / maxT) * (W * 0.15);
+function EnvelopeCurve({ attack, decay, sustainLevel, release, noteOnMs, noteOffMs, width = 220, height = 80 }: EnvelopeCurveProps) {
+  const W = width;
+  const H = height;
   const top = 6;
   const bot = H - 6;
-  const mid = sustainOn ? top + (bot - top) * 0.3 : bot;
 
-  const d = `M 0 ${bot} L ${aX} ${top} L ${sX} ${mid} L ${rEnd} ${bot}`;
+  const maxT = Math.max(attack + decay + release, 2);
+  const aX = (attack / maxT) * (W * 0.65);
+  const dX = aX + (decay / maxT) * (W * 0.65);
+  const sX = dX + W * 0.16;
+  const rEnd = Math.min(sX + (release / maxT) * (W * 0.65), W - 4);
+  const susY = top + (1 - sustainLevel) * (bot - top);
+
+  const d = `M 0 ${bot} L ${aX} ${top} L ${dX} ${susY} L ${sX} ${susY} L ${rEnd} ${bot}`;
 
   const [dot, setDot] = useState<{ x: number; y: number; visible: boolean }>({
     x: 0,
@@ -114,21 +118,28 @@ function EnvelopeCurve({ attack, release, sustainOn, noteOnMs, noteOffMs }: Enve
       return;
     }
 
+    const attackMs = attack * 1000;
+    const decayMs = decay * 1000;
+    const releaseMs = release * 1000;
+
     const tick = () => {
       const elapsed = performance.now() - noteOnMs;
 
       if (noteOffMs === null) {
-        if (elapsed < attack * 1000) {
-          const t = elapsed / (attack * 1000);
+        if (elapsed < attackMs) {
+          const t = elapsed / attackMs;
           setDot({ x: lerp(0, aX, t), y: lerp(bot, top, t), visible: true });
+        } else if (elapsed < attackMs + decayMs) {
+          const t = (elapsed - attackMs) / decayMs;
+          setDot({ x: lerp(aX, dX, t), y: lerp(top, susY, t), visible: true });
         } else {
-          setDot({ x: sX, y: mid, visible: true });
+          setDot({ x: sX, y: susY, visible: true });
         }
       } else {
         const releaseElapsed = performance.now() - noteOffMs;
-        if (releaseElapsed < release * 1000) {
-          const t = releaseElapsed / (release * 1000);
-          setDot({ x: lerp(sX, rEnd, t), y: lerp(mid, bot, t), visible: true });
+        if (releaseElapsed < releaseMs) {
+          const t = releaseElapsed / releaseMs;
+          setDot({ x: lerp(sX, rEnd, t), y: lerp(susY, bot, t), visible: true });
         } else {
           setDot((prev) => ({ ...prev, visible: false }));
           return;
@@ -142,21 +153,28 @@ function EnvelopeCurve({ attack, release, sustainOn, noteOnMs, noteOffMs }: Enve
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [noteOnMs, noteOffMs, attack, release, aX, sX, rEnd, top, bot, mid]);
+  }, [noteOnMs, noteOffMs, attack, decay, release, aX, dX, sX, rEnd, top, bot, susY]);
+
+  const gridY1 = top + (bot - top) * 0.33;
+  const gridY2 = top + (bot - top) * 0.66;
 
   return (
-    <svg width={W} height={H} style={{ display: "block" }}>
+    <svg width={W} height={H} style={{ display: "block", maxWidth: "100%" }}>
+      <line x1={0} y1={gridY1} x2={W} y2={gridY1} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+      <line x1={0} y1={gridY2} x2={W} y2={gridY2} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
       <path
         d={d}
         fill="none"
         stroke="var(--primary)"
-        strokeWidth={2}
+        strokeWidth={1.5}
         strokeLinejoin="round"
         strokeLinecap="round"
+        style={{ filter: "drop-shadow(0 0 3px var(--primary))" }}
       />
-      <circle cx={aX} cy={top} r={3} fill="var(--primary)" />
-      <circle cx={sX} cy={mid} r={3} fill="var(--primary)" />
-      <circle cx={Math.min(rEnd, W - 3)} cy={bot} r={3} fill="var(--primary)" />
+      <circle cx={aX} cy={top} r={3} fill="var(--primary)" opacity={0.6} />
+      <circle cx={dX} cy={susY} r={3} fill="var(--primary)" opacity={0.6} />
+      <circle cx={sX} cy={susY} r={3} fill="var(--primary)" opacity={0.6} />
+      <circle cx={Math.min(rEnd, W - 3)} cy={bot} r={3} fill="var(--primary)" opacity={0.6} />
       {dot.visible && (
         <circle
           cx={dot.x}
@@ -180,9 +198,10 @@ export default function Synth2Page() {
   const [cutoff, setCutoffState] = useState(3000);
   const [resonance, setResState] = useState(1);
   const [attack, setAttackState] = useState(0.05);
-  const [sustainOn, setSustainState] = useState(true);
+  const [decay, setDecayState] = useState(0.15);
+  const [sustainLevel, setSustainLevelState] = useState(0.7);
   const [release, setReleaseState] = useState(0.6);
-  const [reverbOn, setReverbState] = useState(false);
+  const [reverbAmount, setReverbState] = useState(0);
   const [delayAmount, setDelayState] = useState(0);
   const [volume, setVolumeState] = useState(0.8);
   const [startOctave, setStartOctave] = useState(3);
@@ -251,25 +270,25 @@ export default function Synth2Page() {
     engineRef.current?.setAttack(s);
   }, []);
 
-  const handleSustain = useCallback(() => {
-    setSustainState((prev) => {
-      const next = !prev;
-      engineRef.current?.setSustain(next);
-      return next;
-    });
+  const handleDecay = useCallback((s: number) => {
+    setDecayState(s);
+    engineRef.current?.setDecay(s);
   }, []);
+
+  const handleSustainLevel = useCallback((level: number) => {
+    setSustainLevelState(level);
+    engineRef.current?.setSustainLevel(level);
+  }, []);
+
 
   const handleRelease = useCallback((s: number) => {
     setReleaseState(s);
     engineRef.current?.setRelease(s);
   }, []);
 
-  const handleReverb = useCallback(() => {
-    setReverbState((prev) => {
-      const next = !prev;
-      engineRef.current?.setReverb(next);
-      return next;
-    });
+  const handleReverb = useCallback((v: number) => {
+    setReverbState(v);
+    engineRef.current?.setReverb(v);
   }, []);
 
   const handleDelay = useCallback((v: number) => {
@@ -453,13 +472,7 @@ export default function Synth2Page() {
       <div style={SECTION}>
         <p style={LABEL}>FX</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, alignItems: "center" }}>
-          <button
-            onClick={handleReverb}
-            style={toggleStyle(reverbOn)}
-            aria-label={reverbOn ? "Reverb on" : "Reverb off"}
-          >
-            Reverb {reverbOn ? "ON" : "OFF"}
-          </button>
+          <Knob value={reverbAmount} min={0} max={1} step={0.01} label="Reverb" onChange={handleReverb} size="sm" />
           <Knob
             value={delayAmount}
             min={0}
@@ -472,41 +485,28 @@ export default function Synth2Page() {
         </div>
       </div>
 
-      <div style={{ ...SECTION, gridColumn: "1 / -1" }}>
+      <div style={{ ...SECTION, gridColumn: "1 / -1", borderTop: "2px solid var(--primary)" }}>
         <p style={LABEL}>Envelope</p>
-        <div style={{ display: "flex", gap: 32, alignItems: "flex-start" }}>
-          <div style={{ display: "flex", gap: 28 }}>
-            <Fader
-              value={attack}
-              min={0.001}
-              max={2}
-              step={0.001}
-              label="Attack"
-              unit="s"
-              size="md"
-              onChange={handleAttack}
-            />
-            <Fader
-              value={release}
-              min={0.05}
-              max={4}
-              step={0.01}
-              label="Release"
-              unit="s"
-              size="md"
-              onChange={handleRelease}
-            />
+        <div style={{ display: "flex", gap: 28, alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 24 }}>
+            <Fader value={attack} min={0.001} max={2} step={0.001} label="Attack" unit="s" size="md" onChange={handleAttack} />
+            <Fader value={decay} min={0.01} max={2} step={0.01} label="Decay" unit="s" size="md" onChange={handleDecay} />
+            <Fader value={sustainLevel} min={0} max={1} step={0.01} label="Sustain" size="md" onChange={handleSustainLevel} />
+            <Fader value={release} min={0.05} max={4} step={0.01} label="Release" unit="s" size="md" onChange={handleRelease} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={handleSustain} style={toggleStyle(sustainOn)}>
-                Sustain {sustainOn ? "ON" : "OFF"}
-              </button>
-            </div>
+          <div style={{
+            background: "#000",
+            borderRadius: 8,
+            padding: "10px 12px",
+            border: "1px solid #2e2e2e",
+            boxShadow: "inset 0 0 16px rgba(0,0,0,0.9), 0 0 0 3px #181818, 0 0 0 4px #2e2e2e",
+            flexShrink: 0,
+          }}>
             <EnvelopeCurve
               attack={attack}
+              decay={decay}
+              sustainLevel={sustainLevel}
               release={release}
-              sustainOn={sustainOn}
               noteOnMs={noteOnMs}
               noteOffMs={noteOffMs}
             />
@@ -574,43 +574,39 @@ export default function Synth2Page() {
         )}
         {activeTab === "env" && (
           <div style={SECTION}>
-            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-              <Fader
-                value={attack}
-                min={0.001}
-                max={2}
-                step={0.001}
-                label="Attack"
-                unit="s"
-                onChange={handleAttack}
-              />
-              <Fader
-                value={release}
-                min={0.05}
-                max={4}
-                step={0.01}
-                label="Release"
-                unit="s"
-                onChange={handleRelease}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
-              <button onClick={handleSustain} style={toggleStyle(sustainOn)}>
-                Sustain {sustainOn ? "ON" : "OFF"}
-              </button>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <Fader value={attack} min={0.001} max={2} step={0.001} label="Attack" unit="s" onChange={handleAttack} />
+                <Fader value={decay} min={0.01} max={2} step={0.01} label="Decay" unit="s" onChange={handleDecay} />
+                <Fader value={sustainLevel} min={0} max={1} step={0.01} label="Sustain" onChange={handleSustainLevel} />
+                <Fader value={release} min={0.05} max={4} step={0.01} label="Release" unit="s" onChange={handleRelease} />
+              </div>
+              <div style={{
+                background: "#000",
+                borderRadius: 6,
+                padding: "8px",
+                border: "1px solid #2e2e2e",
+                boxShadow: "inset 0 0 12px rgba(0,0,0,0.9), 0 0 0 2px #181818, 0 0 0 3px #2e2e2e",
+                flexShrink: 0,
+              }}>
+                <EnvelopeCurve
+                  attack={attack}
+                  decay={decay}
+                  sustainLevel={sustainLevel}
+                  release={release}
+                  noteOnMs={noteOnMs}
+                  noteOffMs={noteOffMs}
+                  width={140}
+                  height={60}
+                />
+              </div>
             </div>
           </div>
         )}
         {activeTab === "fx" && (
           <div style={SECTION}>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
-              <button
-                onClick={handleReverb}
-                style={toggleStyle(reverbOn)}
-                aria-label={reverbOn ? "Reverb on" : "Reverb off"}
-              >
-                Reverb {reverbOn ? "ON" : "OFF"}
-              </button>
+              <Knob value={reverbAmount} min={0} max={1} step={0.01} label="Reverb" onChange={handleReverb} size="sm" />
               <Knob
                 value={delayAmount}
                 min={0}
