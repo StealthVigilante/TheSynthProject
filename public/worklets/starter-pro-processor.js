@@ -139,12 +139,13 @@ class StarterProProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < n; i++) {
       const env = this.voice.env;
 
-      env.value += (env.target - env.value) * env.coeff;
+      if (env.state !== HOLD) {
+        env.value += (env.target - env.value) * env.coeff;
+      }
 
       if (env.state === ATTACK && env.value >= 1.0) {
         env.value = 1.0;
         env.state = HOLD;
-        env.coeff = 0.0;
       } else if (env.state === HOLD) {
         env.value = 1.0;
       } else if (env.state === RELEASE && env.value <= 0.0001) {
