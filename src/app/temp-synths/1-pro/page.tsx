@@ -28,7 +28,7 @@ const TABS = [
   { id: "fx" as const, label: "FX" },
 ];
 
-export default function Synth1HardwarePage() {
+export default function Synth1ProPage() {
   const engineRef = useRef<StarterProEngine | null>(null);
   const { isMobile, mobileKeyWidth } = useBreakpoint();
 
