@@ -183,6 +183,8 @@ export default function Synth3ProPage() {
       } else {
         eng.dispose();
       }
+    }).catch((err) => {
+      if (!disposed) console.error("ClassicProEngine init failed:", err);
     });
     return () => {
       disposed = true;
