@@ -49,7 +49,11 @@ function oscNext(osc, inc) {
       + polyBlep(p, inc)
       - polyBlep((p + 0.5) % 1.0, inc);
   } else if (osc.type === 'triangle') {
-    s = p < 0.5 ? 4.0 * p - 1.0 : 3.0 - 4.0 * p;
+    const square = (p < 0.5 ? 1.0 : -1.0)
+      + polyBlep(p, inc)
+      - polyBlep((p + 0.5) % 1.0, inc);
+    osc.tri += 4.0 * inc * (square - osc.tri);
+    s = osc.tri;
   } else {
     s = p * 2.0 - 1.0 - polyBlep(p, inc);
   }
@@ -58,7 +62,7 @@ function oscNext(osc, inc) {
 }
 
 function makeOsc(type) {
-  return { phase: Math.random() * 0.1, type };
+  return { phase: Math.random() * 0.1, type, tri: 0.0 };
 }
 
 function makeEnv() {
@@ -253,23 +257,29 @@ class ClassicProProcessor extends AudioWorkletProcessor {
     const R = out0.length > 1 ? out0[1] : out0[0];
     const n = L.length;
 
-    // LFO — block rate
-    const lfoSin = Math.sin(TWO_PI * this.lfoPhase);
-    this.lfoValue = this.lfoEnabled
-      ? (this.lfoType === 'square' ? Math.sign(lfoSin) : lfoSin)
-      : 0.0;
-    this.lfoPhase = (this.lfoPhase + this.lfoRate * n / sr) % 1.0;
-
-    const lfoPitchCents = (this.lfoEnabled && this.lfoRoute === 'pitch')
-      ? this.lfoValue * this.lfoDepth : 0.0;
-    const lfoFilterHz = (this.lfoEnabled && this.lfoRoute === 'filter')
-      ? this.lfoValue * this.lfoDepth * 20.0 : 0.0;
-
-    // Pitch ratios precomputed per block
-    const pitchRatio  = Math.pow(2, lfoPitchCents / 1200);
-    const detuneRatio = Math.pow(2, (this.osc2Detune + lfoPitchCents) / 1200);
+    // LFO — 32-sample control rate
+    let lfoPitchCents = 0.0;
+    let lfoFilterHz   = 0.0;
+    let pitchRatio    = 1.0;
+    let detuneRatio   = Math.pow(2, this.osc2Detune / 1200);
 
     for (let i = 0; i < n; i++) {
+      if (i % 32 === 0) {
+        const lfoSin = Math.sin(TWO_PI * this.lfoPhase);
+        this.lfoValue = this.lfoEnabled
+          ? (this.lfoType === 'square' ? Math.sign(lfoSin) : lfoSin)
+          : 0.0;
+        this.lfoPhase = (this.lfoPhase + this.lfoRate * 32 / sr) % 1.0;
+
+        lfoPitchCents = (this.lfoEnabled && this.lfoRoute === 'pitch')
+          ? this.lfoValue * this.lfoDepth : 0.0;
+        lfoFilterHz = (this.lfoEnabled && this.lfoRoute === 'filter')
+          ? this.lfoValue * this.lfoDepth * 20.0 : 0.0;
+
+        pitchRatio  = Math.pow(2, lfoPitchCents / 1200);
+        detuneRatio = Math.pow(2, (this.osc2Detune + lfoPitchCents) / 1200);
+      }
+
       // Filter envelope — per sample
       this.filterEnvValue = this.filterEnvEnabled
         ? stepEnv(this.filterEnv, this.filterEnvDecay, this.filterEnvSustain, sr)
