@@ -52,6 +52,9 @@ export default function Synth1ProPage() {
     StarterProEngine.create().then((eng) => {
       if (!disposed) {
         engineRef.current = eng;
+        eng.setWaveform('sine');
+        eng.setFilterFreq(4000);
+        eng.setAttack(0.02);
         setAnalyserInfo({ sampleRate: eng.sampleRate, fftSize: eng.fftSize });
         setReady(true);
       } else {
