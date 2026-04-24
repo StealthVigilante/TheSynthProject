@@ -194,8 +194,12 @@ class ClassicProProcessor extends AudioWorkletProcessor {
         v = this.voices.reduce((a, b) => a.startSample < b.startSample ? a : b);
       }
     }
-    v.osc1 = makeOsc(this.osc1Type);
-    v.osc2 = makeOsc(this.osc2Type);
+    v.osc1.phase = Math.random() * 0.1;
+    v.osc1.type  = this.osc1Type;
+    v.osc1.tri   = 0.0;
+    v.osc2.phase = Math.random() * 0.1;
+    v.osc2.type  = this.osc2Type;
+    v.osc2.tri   = 0.0;
     v.freq = freq;
     v.note = note;
     v.startSample = this.sampleCount;
@@ -245,11 +249,14 @@ class ClassicProProcessor extends AudioWorkletProcessor {
         this.svfDirty = true;
         this._prevCutoff = -1;
       }
+      if (m.key === 'osc1Type') for (const v of this.voices) v.osc1.type = m.value;
+      if (m.key === 'osc2Type') for (const v of this.voices) v.osc2.type = m.value;
     }
   }
 
   process(_inputs, outputs) {
-    while (this.msgQueue.length) this._handleMsg(this.msgQueue.shift());
+    for (let qi = 0; qi < this.msgQueue.length; qi++) this._handleMsg(this.msgQueue[qi]);
+    this.msgQueue.length = 0;
 
     const sr = sampleRate;
     const out0 = outputs[0];
@@ -302,8 +309,6 @@ class ClassicProProcessor extends AudioWorkletProcessor {
         const amp = stepEnv(v.ampEnv, this.ampDecay, this.ampSustain, sr);
         if (v.ampEnv.state === IDLE) continue;
 
-        v.osc1.type = this.osc1Type;
-        v.osc2.type = this.osc2Type;
         const s1 = oscNext(v.osc1, v.freq * pitchRatio  / sr);
         const s2 = oscNext(v.osc2, v.freq * detuneRatio / sr);
         mix += ((1.0 - this.oscMix) * s1 + this.oscMix * s2) * amp;
