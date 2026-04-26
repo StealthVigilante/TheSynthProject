@@ -7,34 +7,41 @@ import { CourseAudioEngine } from "@/lib/course/audio";
 
 interface Props { ex: PlayMelodyExercise; onAnswered: (correct: boolean) => void; }
 
+const DEADLINE_MS = 8000;
+
 export function PlayMelody({ ex, onAnswered }: Props) {
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState<Set<string>>(new Set());
   const [done, setDone] = useState(false);
-  const startedAt = useRef(0);
-  const timeoutRef = useRef<number | null>(null);
+
+  const onAnsweredRef = useRef(onAnswered);
+  useEffect(() => { onAnsweredRef.current = onAnswered; });
+
+  const doneRef = useRef(false);
+  useEffect(() => { doneRef.current = done; });
 
   useEffect(() => {
     void CourseAudioEngine.start().then(() => CourseAudioEngine.setPatch(ex.patch));
-    startedAt.current = performance.now();
-    timeoutRef.current = window.setTimeout(() => {
-      if (!done) onAnswered(false);
-      setDone(true);
-    }, 8000);
-    return () => { if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current); };
-  }, [ex.id, ex.patch, onAnswered, done]);
+    const id = window.setTimeout(() => {
+      if (!doneRef.current) {
+        onAnsweredRef.current(false);
+        setDone(true);
+      }
+    }, DEADLINE_MS);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ex.id]);
 
   const onNoteOn = (note: string, vel: number) => {
     setActive((s) => new Set(s).add(note));
     CourseAudioEngine.noteOn(note, vel);
-    if (done) return;
+    if (doneRef.current) return;
     if (note === ex.sequence[progress]) {
       const next = progress + 1;
       setProgress(next);
       if (next === ex.sequence.length) {
         setDone(true);
-        if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-        onAnswered(true);
+        onAnsweredRef.current(true);
       }
     }
   };

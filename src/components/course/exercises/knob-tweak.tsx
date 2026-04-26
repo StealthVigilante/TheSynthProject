@@ -23,15 +23,18 @@ export function KnobTweak({ ex, onAnswered }: Props) {
   useEffect(() => {
     void CourseAudioEngine.start().then(() => {
       CourseAudioEngine.setPatch(ex.initialPatch);
+      // Sync the engine to the knob's displayed value, in case initialPatch
+      // doesn't include `ex.param` (avoids drift between UI knob and audio).
+      CourseAudioEngine.setPatch({ [ex.param]: initial });
     });
-  }, [ex.id, ex.initialPatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ex.id]);
 
   const onChange = (v: number) => {
     setVal(v);
-    if (ex.param === "filterFreq") CourseAudioEngine.setPatch({ filterFreq: v });
-    else if (ex.param === "attack") CourseAudioEngine.setPatch({ attack: v });
-    else if (ex.param === "release") CourseAudioEngine.setPatch({ release: v });
-    else if (ex.param === "volume") CourseAudioEngine.setPatch({ volume: v });
+    // tolerance is in the param's native unit (Hz, s); content authors pick
+    // asymmetric values to feel "fair" on log-scaled knobs.
+    CourseAudioEngine.setPatch({ [ex.param]: v });
   };
 
   const preview = () => {

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FreePlayExercise } from "@/lib/course/types";
 import { ExerciseShell } from "./exercise-shell";
 import { Synth1ProEmbedded } from "@/components/course/synth1-pro-embedded";
@@ -8,22 +8,28 @@ import { CourseAudioEngine } from "@/lib/course/audio";
 interface Props { ex: FreePlayExercise; onAnswered: (correct: boolean) => void; }
 
 export function FreePlay({ ex, onAnswered }: Props) {
-  const [remaining, setRemaining] = useState(ex.durationS ?? null);
+  const [remaining, setRemaining] = useState<number | null>(ex.durationS ?? null);
+  const onAnsweredRef = useRef(onAnswered);
+  useEffect(() => { onAnsweredRef.current = onAnswered; });
 
   useEffect(() => {
     void CourseAudioEngine.start().then(() => {
       if (ex.patch) CourseAudioEngine.setPatch(ex.patch);
     });
-  }, [ex.id, ex.patch]);
-
-  useEffect(() => {
-    onAnswered(true);
-    if (remaining === null) return;
+    onAnsweredRef.current(true);
+    if (ex.durationS == null) return;
     const id = window.setInterval(() => {
-      setRemaining((r) => (r !== null && r > 0 ? r - 1 : 0));
+      setRemaining((r) => {
+        if (r == null || r <= 0) {
+          window.clearInterval(id);
+          return r;
+        }
+        return r - 1;
+      });
     }, 1000);
     return () => window.clearInterval(id);
-  }, [ex.id, onAnswered, remaining]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ex.id]);
 
   return (
     <ExerciseShell prompt={ex.prompt}>
