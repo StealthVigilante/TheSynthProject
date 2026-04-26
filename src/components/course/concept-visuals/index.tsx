@@ -15,5 +15,9 @@ export function ConceptVisual({ visual }: { visual: ConceptVisualKey }) {
     case "octave-keyboard": return <OctaveKeyboard />;
     case "envelope-shape": return <EnvelopeShape />;
     case "filter-sweep": return <FilterSweep />;
+    default: {
+      const _exhaustive: never = visual;
+      throw new Error(`Unknown concept visual: ${_exhaustive as string}`);
+    }
   }
 }

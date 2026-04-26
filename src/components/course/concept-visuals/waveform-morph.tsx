@@ -34,7 +34,7 @@ export function WaveformMorph({ focus = "morph" }: Props) {
     const H = canvas.clientHeight;
     canvas.width = W * dpr;
     canvas.height = H * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     let raf = 0;
     const start = performance.now();

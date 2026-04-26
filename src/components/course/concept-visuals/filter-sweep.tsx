@@ -15,7 +15,7 @@ export function FilterSweep({ minHz = 200, maxHz = 8000, durationS = 4 }: {
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.clientWidth, H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     let raf = 0;
     const start = performance.now();

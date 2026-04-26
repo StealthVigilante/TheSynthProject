@@ -15,7 +15,7 @@ export function EnvelopeShape({ attack = 0.3, release = 1.0, trigger = 0 }: Prop
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.clientWidth, H = canvas.clientHeight;
     canvas.width = W * dpr; canvas.height = H * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     let raf = 0;
     const tStart = performance.now();
