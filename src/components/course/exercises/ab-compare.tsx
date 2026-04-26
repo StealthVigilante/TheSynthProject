@@ -57,7 +57,8 @@ export function AbCompare({ ex, onAnswered }: Props) {
               >▶</button>
               <button
                 onClick={() => choose(which)}
-                className="w-full text-xs font-semibold py-1 rounded bg-card border border-border"
+                disabled={picked !== null}
+                className="w-full text-xs font-semibold py-1 rounded bg-card border border-border disabled:cursor-not-allowed"
               >
                 {slot.label ?? `Pick ${which.toUpperCase()}`}
               </button>

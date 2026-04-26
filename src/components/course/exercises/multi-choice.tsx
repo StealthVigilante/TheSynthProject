@@ -41,7 +41,8 @@ export function MultiChoice({ ex, onAnswered }: Props) {
               key={i}
               onClick={() => choose(i)}
               whileTap={{ scale: 0.98 }}
-              className={`w-full rounded-lg border px-4 py-3 text-sm text-left transition ${cls}`}
+              disabled={picked !== null}
+              className={`w-full rounded-lg border px-4 py-3 text-sm text-left transition disabled:cursor-not-allowed ${cls}`}
             >
               {opt}
             </motion.button>

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ConceptSlideExercise } from "@/lib/course/types";
 import { ConceptVisual } from "../concept-visuals";
 import { ExerciseShell } from "./exercise-shell";
@@ -8,9 +8,14 @@ import { CourseAudioEngine } from "@/lib/course/audio";
 interface Props { ex: ConceptSlideExercise; onAnswered: (correct: boolean) => void; }
 
 export function ConceptSlide({ ex, onAnswered }: Props) {
+  const onAnsweredRef = useRef(onAnswered);
   useEffect(() => {
-    onAnswered(true);
-  }, [ex.id, onAnswered]);
+    onAnsweredRef.current = onAnswered;
+  });
+
+  useEffect(() => {
+    onAnsweredRef.current(true);
+  }, [ex.id]);
 
   const playDemo = () => {
     if (!ex.audio) return;
