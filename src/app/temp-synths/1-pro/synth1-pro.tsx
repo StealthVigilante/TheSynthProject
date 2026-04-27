@@ -49,6 +49,10 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
   const [activeTab, setActiveTab] = useState<"osc" | "filter" | "env" | "fx">("osc");
   const [currentNote, setCurrentNote] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [sustain, setSustain] = useState(false);
+  const sustainRef = useRef(false);
+  const sustainedNotesRef = useRef<Set<string>>(new Set());
+  useEffect(() => { sustainRef.current = sustain; }, [sustain]);
 
   useEffect(() => {
     let disposed = false;
@@ -74,12 +78,25 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
   }, []);
 
   const noteOn = useCallback((note: string, vel: number) => {
+    sustainedNotesRef.current.delete(note);
     engineRef.current?.noteOn(note, vel);
     setCurrentNote(note);
   }, []);
 
   const noteOff = useCallback((note: string) => {
+    if (sustainRef.current) {
+      sustainedNotesRef.current.add(note);
+      return;
+    }
     engineRef.current?.noteOff(note);
+    setCurrentNote(null);
+  }, []);
+
+  const flushSustained = useCallback(() => {
+    for (const n of sustainedNotesRef.current) {
+      engineRef.current?.noteOff(n);
+    }
+    sustainedNotesRef.current.clear();
     setCurrentNote(null);
   }, []);
 
@@ -129,6 +146,11 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
     const heldKeys = new Set<string>();
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!e.repeat) setSustain(true);
+        return;
+      }
       if (e.repeat) return;
       const entry = KEY_NOTE_MAP[e.key.toLowerCase()];
       if (!entry) return;
@@ -142,6 +164,12 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        setSustain(false);
+        flushSustained();
+        return;
+      }
       const entry = KEY_NOTE_MAP[e.key.toLowerCase()];
       if (!entry) return;
       heldKeys.delete(e.key.toLowerCase());
@@ -161,7 +189,7 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isMobile, noteOn, noteOff]);
+  }, [isMobile, noteOn, noteOff, flushSustained]);
 
   const tabBtnStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
@@ -264,7 +292,31 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
         )}
         {activeTab === "fx" && (
           <div style={mobilePanelStyle}>
-            <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
+              <button
+                onClick={() => {
+                  setSustain((p) => {
+                    const next = !p;
+                    if (!next) flushSustained();
+                    return next;
+                  });
+                }}
+                aria-label={sustain ? "Sustain on" : "Sustain off"}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 3,
+                  border: `1px solid ${sustain ? "#00d4ff" : "#2a2a2a"}`,
+                  background: sustain ? "#001a22" : "#0a0a0a",
+                  color: sustain ? "#00d4ff" : "#404040",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.15em",
+                  cursor: "pointer",
+                  boxShadow: sustain ? "inset 0 0 8px rgba(0,212,255,0.3)" : "none",
+                }}
+              >
+                SUSTAIN
+              </button>
               <button
                 onClick={handleReverb}
                 aria-label={reverb ? "Reverb on" : "Reverb off"}
@@ -577,12 +629,39 @@ export function Synth1Pro({ embedded: _embedded = false }: Synth1ProProps) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  gap: 16,
                   color: "#2a2a2a",
                   fontSize: 9,
                   fontFamily: "Arial",
                   letterSpacing: "0.3em",
                 }}>
-                  OCT {startOctave}–{startOctave + 2}
+                  <span>OCT {startOctave}–{startOctave + 2}</span>
+                  <button
+                    onClick={() => {
+                      setSustain((p) => {
+                        const next = !p;
+                        if (!next) flushSustained();
+                        return next;
+                      });
+                    }}
+                    title="Sustain (Spacebar)"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      border: `1px solid ${sustain ? "#00d4ff" : "#1a1a1a"}`,
+                      background: sustain ? "rgba(0,212,255,0.08)" : "transparent",
+                      color: sustain ? "#00d4ff" : "#404040",
+                      fontSize: 8, padding: "2px 8px", borderRadius: 2,
+                      fontFamily: "Arial", letterSpacing: "0.2em", cursor: "pointer",
+                      boxShadow: sustain ? "inset 0 0 6px rgba(0,212,255,0.25)" : "none",
+                    }}
+                  >
+                    <span style={{
+                      width: 6, height: 6, borderRadius: "50%",
+                      background: sustain ? "#00d4ff" : "#1a1a1a",
+                      boxShadow: sustain ? "0 0 4px #00d4ff" : "none",
+                    }} />
+                    SUS
+                  </button>
                 </span>
                 <button
                   style={{
