@@ -149,6 +149,8 @@ export interface Database {
           },
         ];
       };
+      // LEGACY: pre-static-content lesson schema. Not used by new course flow.
+      // Kept until DB migration drops these tables. Do NOT import in new code.
       lessons: {
         Row: {
           id: string;
